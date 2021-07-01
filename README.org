@@ -16,5 +16,30 @@
    - A function for adding digital clocks at various timezones
    - Functions for retrieiving system info (disk space, cpu use, ram, etc)
    - Simple time series plots
+ 
 ** Why?
    I'm too dumb to configure conky how I like, and I've been making something similar in an ad hoc way using feh. Time to upgrade that to something more real.
+   
+** Architecture (planning)
+*** class Jonky
+    - Main entry point
+    - Manages references to root window, cairo context, the tick and draw function
+    - Does double buffering (?)
+    - Must be subclassed to create your own panels
+*** class Drawable
+    - Base class for all things that can be drawn
+    - Supply =draw= function
+    - Define position in either screen space fractions or pixels
+      - (how to convert screen space fractions to pixels?)
+**** class Text
+     - Initialize with font name, text size (and optional bounds?)
+     - Shadow or stoke option?
+**** class Shape
+     - Base class for shapes
+     - Give options for fill, stroke
+***** class Circle
+      - Init with radius + inherit
+***** class Rectangle
+      - Init with w, h, [rounding radius] + inherit
+	
+   Bla bla bla
