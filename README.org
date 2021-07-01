@@ -1,0 +1,20 @@
+* Jonky - Jari's Conky
+** What is it?
+   An attempt to make my own conky-like tool. It'll be based on PyCairo and PyGtk. The first cut will:
+   - Only allow you to write to the whole desktop
+   - Only give basic drawing utilities
+     - Text
+     - Circles
+     - Rectangles
+     - Polygons
+     - FontAwesome
+     - Images/SVGs
+     - ?
+   - A mechanism to call various functions at various times
+   - A mechanism for caching
+   - A way to create a live wallpaper that's controlled by time of day
+   - A function for adding digital clocks at various timezones
+   - Functions for retrieiving system info (disk space, cpu use, ram, etc)
+   - Simple time series plots
+** Why?
+   I'm too dumb to configure conky how I like, and I've been making something similar in an ad hoc way using feh. Time to upgrade that to something more real.
