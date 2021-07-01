@@ -26,6 +26,7 @@
     - Manages references to root window, cairo context, the tick and draw function
     - Does double buffering (?)
     - Must be subclassed to create your own panels
+    - Define background color
 *** class Drawable
     - Base class for all things that can be drawn
     - Supply =draw= function
