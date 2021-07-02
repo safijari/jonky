@@ -41,7 +41,6 @@ class Drawable:
         if color is None:
             color = (0, 0, 0)
         color = _ccf(color)
-        print(color)
         self.color = color
         if pose is None:
             pose = Pose()
@@ -73,19 +72,22 @@ class Text(Drawable):
 
     def draw(self, ctx):
         super(Text, self).draw(ctx)
-        ctx.save()
-        ctx.select_font_face(self.font)
-        ctx.set_font_size(self.font_size)
-        (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
-        ctx.set_source_rgb(*(self.color))
+        yshift = 0
+        for line in self.text.split("\n"):
+            ctx.save()
+            ctx.select_font_face(self.font)
+            ctx.set_font_size(self.font_size)
+            (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
+            ctx.set_source_rgb(*(self.color))
 
-        ctx.translate(self.pose.x, self.pose.y)
-        ctx.rotate(self.pose.yaw_rad)
-        # ctx.translate(-x - width / 2, -y - self.font_size / 2)
+            ctx.translate(self.pose.x, self.pose.y + yshift)
+            ctx.rotate(self.pose.yaw_rad)
+            # ctx.translate(-x - width / 2, -y - self.font_size / 2)
 
-        ctx.show_text(self.text)
-        ctx.stroke()
-        ctx.restore()
+            ctx.show_text(line)
+            ctx.stroke()
+            yshift += self.font_size
+            ctx.restore()
 
 
 class Image(Drawable):
@@ -97,7 +99,6 @@ class Image(Drawable):
 
         # apparently there's no good way to figure out if an image is a PIL image ...
         self.src = from_pil(src)
-
 
     def draw(self, ctx: cairo.Context):
         super(Image, self).draw(ctx)

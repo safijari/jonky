@@ -1,5 +1,6 @@
 from jonky import Jonky
 from jonky.drawable import Text, Pose, Image
+from jonky.widgets import DigitalClock
 from PIL import Image as PImage
 from PIL import ImageFilter
 
@@ -9,13 +10,18 @@ class Test(Jonky):
         super(Test, self).__init__(*args, **kwargs)
         self.items.extend(
             [
-                Image(PImage.open("/home/jari/Downloads/wapa/thumb0001.jpg").filter(filter=ImageFilter.GaussianBlur(5))),
-                Text("mononoki", 150, "hey", color=(0.5, 0.5, 0.5)).set_pose(
-                    200, 200
+                Image(
+                    PImage.open("/home/jari/Downloads/wapa/thumb0001.jpg").filter(
+                        filter=ImageFilter.GaussianBlur(5)
+                    )
                 ),
-                Text("mononoki", 100, "hey", color=(1, 0.5, 0.5)).set_pose(350, 350),
+                Text("mononoki", 100, "hey\nshithead", color=(1, 0.5, 0.5)).set_pose(350, 350),
+                DigitalClock("US/Pacific", "mononoki", 50, "Office", color="blue").set_pose(100, 100),
+                DigitalClock("US/Eastern", "mononoki", 50, "Dallan").set_pose(100, 150),
+                DigitalClock("Europe/Berlin", "mononoki", 50, "Local").set_pose(100, 200),
             ]
         )
+
 
 if __name__ == "__main__":
     Test(period_in_sec=1, target_size=(1920, 1080)).run()

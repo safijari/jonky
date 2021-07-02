@@ -21,20 +21,24 @@
    I'm too dumb to configure conky how I like, and I've been making something similar in an ad hoc way using feh. Time to upgrade that to something more real.
    
 ** Architecture (planning)
-*** class Jonky
+*** class Jonky [X]
     - Main entry point
     - Manages references to root window, cairo context, the tick and draw function
     - Does double buffering (?)
     - Must be subclassed to create your own panels
     - Define background color
-*** class Drawable
+*** class Drawable [X]
     - Base class for all things that can be drawn
     - Supply =draw= function
     - Define pose in either screen space fractions or pixels
       - (how to convert screen space fractions to pixels?)
-**** class Text
+**** class Text [X]
      - Initialize with font name, text size (and optional bounds?)
      - Shadow or stoke option?
+**** class Image [X]
+     - Initialize with a PIL image, or path, or svg (?)
+     - resize?
+     - filters?
 **** class Shape
      - Base class for shapes
      - Give options for fill, stroke
@@ -43,4 +47,3 @@
 ***** class Rectangle
       - Init with w, h, [rounding radius] + inherit
 	
-   Bla bla bla
