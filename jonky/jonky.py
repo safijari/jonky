@@ -1,5 +1,6 @@
 import gi
-gi.require_version('Gtk', '3.0')
+
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
@@ -36,14 +37,14 @@ class Jonky(object):
                 self.draw()
                 self.last_run_time = self.curr_time
             self.draw_buffer()
-            time.sleep(1/100)
+            time.sleep(1 / 10)
 
     def draw_buffer(self):
         crr = self.cairo_context_root
         crr.save()
-        crr.set_source_rgb(1.0, 1.0, 1.0)
+        # crr.set_source_rgb(1.0, 1.0, 1.0)
         crr.set_operator(cairo.OPERATOR_SOURCE)
-        crr.paint()
+        # crr.paint()
         crr.set_source_surface(self.buffer)
         crr.paint()
         crr.restore()
@@ -52,8 +53,8 @@ class Jonky(object):
         if self.target_size:
             rww = self.root.get_width()
             rwh = self.root.get_height()
-            sx = rww/self.target_size[0]
-            sy = rwh/self.target_size[1]
+            sx = rww / self.target_size[0]
+            sy = rwh / self.target_size[1]
 
         cr: cairo.Context = self.cairo_context
         cr.save()
@@ -64,7 +65,39 @@ class Jonky(object):
         cr.paint()
         for item in self.items:
             if item.pose_transformer:
-                item.pose_transformer(item._pose_correction, self.curr_time - self.start_time)
+                item.pose_transformer(
+                    item._pose_correction, self.curr_time - self.start_time
+                )
             item.draw(cr)
         self.root.process_all_updates()
         cr.restore()
+
+
+class JonkyImage:
+    def __init__(self, width, height, nodes, scale=1):
+        self.start_time = time.time()
+        self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, width*scale, height*scale)
+        self.cairo_context = cairo.Context(self.buffer)
+        self.curr_time = time.time()
+        self.scale = scale
+        self.items = nodes
+
+    def draw(self):
+        cr: cairo.Context = self.cairo_context
+        cr.save()
+        cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.paint()
+        cr.scale(self.scale, self.scale)
+        for item in self.items:
+            if item.pose_transformer:
+                item.pose_transformer(
+                    item._pose_correction, self.curr_time - self.start_time
+                )
+            item.draw(cr)
+        cr.restore()
+        return self
+
+    def save(self, path):
+        self.buffer.write_to_png(path)
+        return self

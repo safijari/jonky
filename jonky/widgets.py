@@ -86,6 +86,31 @@ class LineWithText(Group):
         self.nodes = [self.text, self.line]
 
 
+class RectangleWithText(Group):
+    def __init__(
+        self,
+        width,
+        height,
+        corner_radius,
+        font,
+        font_size,
+        text,
+        stroke_width,
+        *args,
+        **kwargs,
+    ):
+        super(RectangleWithText, self).__init__(*args, **kwargs)
+        self.nodes = [
+            Rectangle(
+                width, height, corner_radius, stroke_width=stroke_width, *args, **kwargs
+            )
+        ]
+        self.text = Text(font, font_size, text, color=self.color).set_pose(
+            corner_radius + stroke_width, corner_radius + stroke_width
+        )
+        self.nodes.append(self.text)
+
+
 class DayCal(Group):
     def __init__(
         self,
@@ -95,7 +120,7 @@ class DayCal(Group):
         nodes=None,
         time_function=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         super(DayCal, self).__init__([], *args, **kwargs)
         self.height = height
@@ -191,8 +216,10 @@ class DayCal(Group):
         for et in self.events:
             if not (zero_time < et[0] < end_time or zero_time < et[1] < end_time):
                 continue
-            start_loc = ((et[0] - zero_time) / th)
-            end_loc = ((et[1] - zero_time) / th)
+            start_loc = (et[0] - zero_time) / th
+            end_loc = (et[1] - zero_time) / th
+
+            font_size = _s(start_loc) * 0.01
             if start_loc < 0.2 or start_loc > 0.8:
                 continue
             start_loc = _s(ht_xform(start_loc))
@@ -200,9 +227,23 @@ class DayCal(Group):
             # event_at(ht_xform(start_loc + 0.001), ht_xform(end_loc - 0.001))
             # text_at(ht_xform((start_loc + end_loc)/2), 0.1, et[-1])
             rects.append(
-                Rectangle(
-                    self.width - self.stroke_width * 4, end_loc - start_loc, 5,
-                    color="blue", fill_color=Color.named("white", 0.2)
+                # Rectangle(
+                #     self.width - self.stroke_width * 4,
+                #     end_loc - start_loc,
+                #     5,
+                #     color="blue",
+                #     fill_color=Color.named("white", 0.2),
+                # ).set_pose(self.stroke_width * 2, y=start_loc)
+                RectangleWithText(
+                    self.width - self.stroke_width * 4,
+                    end_loc - start_loc,
+                    5,
+                    "mononoki",
+                    min((end_loc - start_loc) * 0.5, self.height*0.05),
+                    et[-1],
+                    stroke_width=self.stroke_width,
+                    color="blue",
+                    fill_color=Color.named("white", 0.2),
                 ).set_pose(self.stroke_width * 2, y=start_loc)
             )
 

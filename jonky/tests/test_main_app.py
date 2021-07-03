@@ -75,4 +75,4 @@ class Test(Jonky):
 
 
 if __name__ == "__main__":
-    Test(period_in_sec=0.01, target_size=(1920, 1080)).run()
+    Test(period_in_sec=1, target_size=(1920, 1080)).run()
