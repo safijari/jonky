@@ -70,7 +70,7 @@ class Color:
         if isinstance(inp, str):
             return Color.named(inp)
         if isinstance(inp, tuple):
-            assert len(tuple) in [3, 4], "color invalid"
+            assert len(inp) in [3, 4], "color invalid"
             if len(inp) == 3:
                 return cls(*inp, 1.0)
             return cls(*inp)
@@ -82,6 +82,14 @@ class Rect:
     y: float
     w: float
     h: float
+
+    @property
+    def y2(self):
+        return self.y + self.h
+
+    @property
+    def x2(self):
+        return self.x + self.w
 
 
 class Packing(Enum):
@@ -154,6 +162,8 @@ class Group(Drawable):
     def draw(self, ctx, do_xform=True):
         self.pre_draw(ctx, do_xform)
         rect = Rect(self.pose.x, self.pose.y, 0, 0)
+        x2 = 0
+        y2 = 0
         for i, node in enumerate(self.nodes):
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
@@ -168,6 +178,11 @@ class Group(Drawable):
                 if self.packing == Packing.HORIZONTAL:
                     rect.w += _rect.w + self.pack_padding
                     rect.h = max(rect.h, _rect.h)
+            else:
+                x2 = max(x2, _rect.x2)
+                y2 = max(y2, _rect.y2)
+                rect.w = x2 - rect.x
+                rect.h = y2 - rect.y
         self.post_draw(ctx)
         return rect
 
@@ -180,7 +195,9 @@ class BakedGroup(Group):
     def draw(self, ctx: cairo.Context):
         if not self.surface:
             size = super(BakedGroup, self).draw(ctx, True)
-            self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, int(size.w + 1)*2, int(size.h + 1)*2)
+            self.surface = cairo.ImageSurface(
+                cairo.FORMAT_ARGB32, int(size.w) * 2, int(size.h) * 2
+            )
             surface_ctx = cairo.Context(self.surface)
             surface_ctx.scale(2.0, 2.0)
 
@@ -189,7 +206,7 @@ class BakedGroup(Group):
             surface_ctx.paint()
 
             super(BakedGroup, self).draw(surface_ctx, False)
-            # self.surface.write_to_png("/tmp/test.png")
+            self.surface.write_to_png("/tmp/test.png")
         else:
             self.pre_draw(ctx, True)
             ctx.scale(0.5, 0.5)
@@ -275,15 +292,23 @@ class Shape(Drawable):
         pass
 
 
-class Circle(Shape):
-    def __init__(self, radius, *args, **kwargs):
-        super(Circle, self).__init__(*args, **kwargs)
+class Arc(Shape):
+    def __init__(self, radius, start_angle, end_angle, *args, **kwargs):
+        super(Arc, self).__init__(*args, **kwargs)
         self.radius = radius
+        self.start_angle = start_angle
+        self.end_angle = end_angle
 
     def draw(self, ctx: cairo.Context):
         self.pre_draw(ctx)
         ctx.set_line_width(self.stroke_width)
-        ctx.arc(0, 0, self.radius, 0, math.pi * 2)
+        ctx.arc(
+            0,
+            0,
+            self.radius,
+            self.start_angle * math.pi / 180,
+            self.end_angle * math.pi / 180,
+        )
         if self.fill_color:
             ctx.set_source_rgba(*(self.fill_color.tup))
             ctx.fill_preserve()
@@ -292,3 +317,9 @@ class Circle(Shape):
         else:
             ctx.stroke()
         self.post_draw(ctx)
+        return Rect(0, 0, 1, 1)
+
+
+class Circle(Arc):
+    def __init__(self, radius, *args, **kwargs):
+        super(Circle, self).__init__(radius, 0, math.pi * 2, *args, **kwargs)
