@@ -1,8 +1,10 @@
-from jonky.drawable import Text, Drawable, Group, Arc, Color, Rect, Polygon
+from jonky.drawable import Text, Drawable, Group, Arc, Color, Rect, Polygon, Rectangle
 from jonky.widget_helpers import datetime_to_string, draw_ring, ampm
 import maya
 import time
 import random
+from bash import bash
+import os
 
 
 def fn(x):
@@ -100,19 +102,8 @@ class DayCal(Group):
         self.width = width
         _s = make_scaler(self.height)
         self._s = _s
-        self.side_lines = []
-        self.side_lines.append(
-            Polygon(
-                [(0, 0), (0, self.height)], stroke_width=stroke_width, color=self.color
-            ),
-        )
-        self.side_lines.append(
-            Polygon(
-                [(self.width, 0), (self.width, self.height)],
-                stroke_width=stroke_width,
-                color=self.color,
-            ),
-        )
+        self.side_lines = [Rectangle(width, height, 20, stroke_width, color=self.color)]
+        self.stroke_width = stroke_width
         self.lines = [
             LineWithText(
                 "mononoki",
@@ -133,9 +124,30 @@ class DayCal(Group):
                 st = time_function.start_time
             return (time.time() - st) * 60 * 60 + st
 
+        self.events = []
+        self.update_events()
+
         self.time_function = (
             time_function if time_function is not None else (lambda: time.time())
         )
+
+    def update_events(self):
+        cal = str(
+            bash(
+                f"gcalcli --calendar {os.environ['JONKY_EMAIL_ADDRESS']} agenda --details=length --tsv"
+            )
+        )
+        res = [line.split("\t") for line in cal.split("\n")]
+        event_times = []
+        for r in res:
+            event_times.append(
+                (
+                    maya.parse(r[0] + " " + r[1], timezone="Europe/Berlin").epoch,
+                    maya.parse(r[2] + " " + r[3], timezone="Europe/Berlin").epoch,
+                    r[-1],
+                )
+            )
+        self.events = event_times
 
     def draw(self, ctx):
         _s = self._s
@@ -149,7 +161,7 @@ class DayCal(Group):
 
         i = 0
         res = 0.5 - offset / th
-        while res > 0:
+        while res > 0.2:
             l = self.lines[i]
             l.set_pose(y=_s(ht_xform(res)))
             l.text.text = ampm(hr)
@@ -161,7 +173,7 @@ class DayCal(Group):
 
         hr = le_time.hour + 1
         res = 0.5 + (3600 - offset) / th
-        while res < 1.3:
+        while res < 0.8:
             l = self.lines[i]
             l.set_pose(y=_s(ht_xform(res)))
             l.text.text = ampm(hr)
@@ -171,5 +183,28 @@ class DayCal(Group):
             hr += 1
             i += 1
 
-        self.nodes = self.side_lines + final_lines
+        rects = []
+
+        zero_time = timestamp - 12 * 3600
+        end_time = timestamp + 12 * 3600
+
+        for et in self.events:
+            if not (zero_time < et[0] < end_time or zero_time < et[1] < end_time):
+                continue
+            start_loc = ((et[0] - zero_time) / th)
+            end_loc = ((et[1] - zero_time) / th)
+            if start_loc < 0.2 or start_loc > 0.8:
+                continue
+            start_loc = _s(ht_xform(start_loc))
+            end_loc = _s(ht_xform(end_loc))
+            # event_at(ht_xform(start_loc + 0.001), ht_xform(end_loc - 0.001))
+            # text_at(ht_xform((start_loc + end_loc)/2), 0.1, et[-1])
+            rects.append(
+                Rectangle(
+                    self.width - self.stroke_width * 4, end_loc - start_loc, 5,
+                    color="blue", fill_color=Color.named("white", 0.2)
+                ).set_pose(self.stroke_width * 2, y=start_loc)
+            )
+
+        self.nodes = self.side_lines + final_lines + rects
         super(DayCal, self).draw(ctx)

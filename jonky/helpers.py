@@ -1,5 +1,6 @@
 import PIL.Image as Image
 import cairo
+import math
 
 
 def from_pil(im, alpha=1.0, format=cairo.FORMAT_ARGB32):
@@ -16,3 +17,7 @@ def from_pil(im, alpha=1.0, format=cairo.FORMAT_ARGB32):
     arr = bytearray(im.tobytes("raw", "BGRa"))
     surface = cairo.ImageSurface.create_for_data(arr, format, im.width, im.height)
     return surface
+
+
+def _rad(deg):
+    return deg * math.pi / 180

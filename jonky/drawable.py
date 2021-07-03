@@ -2,7 +2,7 @@ from libjari.colors import convert_color_float
 import math
 from dataclasses import dataclass
 import cairo
-from jonky.helpers import from_pil
+from jonky.helpers import from_pil, _rad
 from PIL import Image as PImage
 import PIL
 from enum import Enum
@@ -198,6 +198,8 @@ class Group(Drawable):
                 if self.packing == Packing.HORIZONTAL:
                     node.set_pose(rect.w + i * self.pack_padding, 0)
             _rect = node.draw(ctx)
+            if _rect is None:
+                _rect = Rect(0, 0, 1, 1)
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
                     rect.h += _rect.h + self.pack_padding
@@ -374,3 +376,42 @@ class Polygon(Shape):
             ctx.stroke()
         self.post_draw(ctx)
         return Rect(0, 0, 1, 1)
+
+class Rectangle(Shape):
+    def __init__(self, width, height, corner_radius=0, *args, **kwargs):
+        super(Rectangle, self).__init__(*args, **kwargs)
+        self.width = width
+        self.height = height
+        self.corner_radius = corner_radius
+
+    def draw(self, ctx: cairo.Context):
+        self.pre_draw(ctx)
+        w, h, r = self.width, self.height, self.corner_radius
+        ctx.set_line_width(self.stroke_width)
+        ctx.move_to(r, 0)
+        ctx.line_to(w-r, 0)
+        if r != 0:
+            ctx.arc(w - r, r, r, _rad(-90), 0)
+        ctx.line_to(w, h-r)
+
+        if r != 0:
+            ctx.arc(w - r, h - r, r, _rad(0), _rad(90))
+
+        ctx.line_to(r, h)
+
+        if r != 0:
+            ctx.arc(r, h - r, r, _rad(90), _rad(180))
+
+        ctx.line_to(0, r)
+
+        if r != 0:
+            ctx.arc(r, r, r, _rad(180), _rad(270))
+
+        if self.fill_color:
+            ctx.set_source_rgba(*(self.fill_color.tup))
+            ctx.fill_preserve()
+            ctx.set_source_rgba(*(self.color.tup))
+            ctx.stroke()
+        else:
+            ctx.stroke()
+        self.post_draw(ctx)

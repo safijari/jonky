@@ -1,3 +1,4 @@
+from libjari.jpath import JPath
 from jonky import Jonky
 from jonky.drawable import (
     Text,
@@ -10,6 +11,7 @@ from jonky.drawable import (
     Arc,
     Polygon,
     Color,
+    Rectangle,
 )
 from jonky.widgets import DigitalClock, TimeDial, DayCal
 from PIL import Image as PImage
@@ -30,16 +32,10 @@ class Test(Jonky):
         self.items.extend(
             [
                 Image(
-                    PImage.open("/home/jari/Downloads/wapa/thumb1000.jpg").filter(
+                    PImage.open(JPath.from_home("Downloads/wapa/thumb1000.jpg").str).filter(
                         filter=ImageFilter.GaussianBlur(5)
                     )
                 ),
-                Polygon(
-                    [(100, 100), (200, 200), (100, 300)],
-                    stroke_width=10,
-                    color=(1.0, 0, 0, 1.0),
-                    fill_color=(1.0, 0, 0, 0.1),
-                ).set_pose_transformer(transform_pose),
                 Text(
                     "Ubuntu mono",
                     20,
@@ -58,9 +54,6 @@ class Test(Jonky):
                     Packing.VERTICAL,
                     10,
                 ).set_pose(400, 100, 45),
-                Arc(
-                    100, 0, 45, stroke_width=10, color="black", fill_color="red"
-                ).set_pose(100, 100),
                 Group(
                     [DigitalClock("US/Eastern", "mononoki", 30, "Dallan")]
                     + [
@@ -71,7 +64,12 @@ class Test(Jonky):
                 ).set_pose(0, 500),
                 TimeDial(150, 20).set_pose(500, 500),
                 TimeDial(180, 20).set_pose(500, 500, 90),
-                DayCal(1080, 300, 1, color=Color.named("white", 1.0)).set_pose(1500),
+                DayCal(900, 300, 1, color=Color.named("white", 1.0)).set_pose(
+                    1500, 100
+                ),
+                Rectangle(
+                    300, 100, 10, 5, color="white", fill_color=Color.named("blue", 0.5)
+                ).set_pose(100, 100),
             ]
         )
 
