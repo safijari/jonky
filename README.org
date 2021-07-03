@@ -49,3 +49,9 @@
       - Init with radius + inherit
 ***** class Rectangle
       - Init with w, h, [rounding radius] + inherit
+*** ??? Some sort of a baking mechanism
+    So, let's say you wanna draw a clock. You could make a rudimentary one with a group that draws a circle and the ticks and set it up so that the needles move based on the time.
+    
+    The trouble is that with every draw call, you'd draw everything. That's a fair bit on unnecessary compute (come to think of it this is true for a lot of things, e.g. animated text)
+    
+    So, we should have a BakedGroup. The point of the baked group is to do the drawing once (or on special calls) and to save them to a surface. Then draw the surface every time rather than repeat the potentially expensive operations

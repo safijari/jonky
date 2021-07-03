@@ -127,11 +127,12 @@ class Drawable:
         self.pose_transformer = transformer
         return self
 
-    def pre_draw(self, ctx):
+    def pre_draw(self, ctx, do_xform=True):
         ctx.save()
         ctx.set_source_rgba(*(self.color.tup))
-        ctx.translate(self.pose.x, self.pose.y)
-        ctx.rotate(self.pose.yaw_rad)
+        if do_xform:
+            ctx.translate(self.pose.x, self.pose.y)
+            ctx.rotate(self.pose.yaw_rad)
 
     def post_draw(self, ctx):
         ctx.restore()
@@ -150,8 +151,8 @@ class Group(Drawable):
         assert self.packing != Packing.GRID
         self.nodes = nodes
 
-    def draw(self, ctx):
-        self.pre_draw(ctx)
+    def draw(self, ctx, do_xform=True):
+        self.pre_draw(ctx, do_xform)
         rect = Rect(self.pose.x, self.pose.y, 0, 0)
         for i, node in enumerate(self.nodes):
             if self.packing != Packing.NONE:
@@ -160,10 +161,43 @@ class Group(Drawable):
                 if self.packing == Packing.HORIZONTAL:
                     node.set_pose(rect.w + i * self.pack_padding, 0)
             _rect = node.draw(ctx)
-            rect.w += _rect.w
-            rect.h += _rect.h
+            if self.packing != Packing.NONE:
+                if self.packing == Packing.VERTICAL:
+                    rect.h += _rect.h + self.pack_padding
+                    rect.w = max(rect.w, _rect.w)
+                if self.packing == Packing.HORIZONTAL:
+                    rect.w += _rect.w + self.pack_padding
+                    rect.h = max(rect.h, _rect.h)
         self.post_draw(ctx)
         return rect
+
+
+class BakedGroup(Group):
+    def __init__(self, *args, **kwargs):
+        super(BakedGroup, self).__init__(*args, **kwargs)
+        self.surface = None
+
+    def draw(self, ctx: cairo.Context):
+        if not self.surface:
+            size = super(BakedGroup, self).draw(ctx, True)
+            print(size)
+            self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size.w, size.h)
+            surface_ctx = cairo.Context(self.surface)
+
+            surface_ctx.set_source_rgba(1.0, 1.0, 1.0, 0.0)
+            surface_ctx.set_operator(cairo.OPERATOR_SOURCE)
+            surface_ctx.paint()
+
+            super(BakedGroup, self).draw(surface_ctx, False)
+        else:
+            self.pre_draw(ctx, True)
+            ctx.rectangle(0, 0, self.surface.get_width(), self.surface.get_height())
+            ctx.set_source_rgba(0, 0, 0, 0.0)
+            ctx.set_source_surface(self.surface)
+            ctx.clip()
+            ctx.set_operator(cairo.OPERATOR_ATOP)
+            ctx.paint()
+            self.post_draw(ctx)
 
 
 class Text(Drawable):

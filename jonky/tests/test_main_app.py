@@ -1,5 +1,5 @@
 from jonky import Jonky
-from jonky.drawable import Text, Pose, Image, Group, Packing, Circle
+from jonky.drawable import Text, Pose, Image, Group, Packing, Circle, BakedGroup
 from jonky.widgets import DigitalClock
 from PIL import Image as PImage
 from PIL import ImageFilter
@@ -19,7 +19,7 @@ class Test(Jonky):
         self.items.extend(
             [
                 Image(
-                    PImage.open("/home/jari/Downloads/wapa/thumb0001.jpg").filter(
+                    PImage.open("/home/jari/Downloads/wapa/thumb1000.jpg").filter(
                         filter=ImageFilter.GaussianBlur(5)
                     )
                 ),
@@ -36,22 +36,22 @@ class Test(Jonky):
                         DigitalClock(
                             "US/Pacific", "mononoki", 30, "Office", color="blue"
                         ),
-                        DigitalClock("US/Eastern", "mononoki", 30, "Dallan"),
                         DigitalClock("Europe/Berlin", "mononoki", 30, "Local"),
                     ],
                     Packing.VERTICAL,
-                    50,
+                    10,
                 ).set_pose(400, 100, 45),
-                Group(
+                Circle(100, stroke_width=10, color="black", fill_color="red").set_pose(
+                    100, 100
+                ),
+                BakedGroup(
                     [
                         Image(path.str)
                         for path in JPath.from_home("Pictures").glob_list("tag*png")
-                    ],
+                    ]
+                    + [DigitalClock("US/Eastern", "mononoki", 30, "Dallan")],
                     Packing.VERTICAL,
                 ).set_pose(0, 500),
-                Circle(100, stroke_width=10, color="black"
-                       ,fill_color="red"
-                       ).set_pose(100, 100),
             ]
         )
 
