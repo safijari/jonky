@@ -104,47 +104,24 @@ def draw_ring(radius, width):
         arc_with_start_end_colors(radius, 90 + 25, 180 - 25, width, start_col, end_col)
     )
 
-    return arcs
+    width = width * 0.5
 
-    # width = width * 0.5
-    # for i in range(0, 360, 15):
-    #     draw_arc(context, (200, 200), radius, i - 0.25, i + 0.25, (1, 1, 1), width)
-    # draw_arc(
-    #     context,
-    #     (200, 200),
-    #     radius,
-    #     start_shift + 180 - 0.5,
-    #     start_shift + 180 + 0.51,
-    #     (0, 1, 0),
-    #     width,
-    # )
-    # draw_arc(
-    #     context,
-    #     (200, 200),
-    #     radius,
-    #     start_shift + 180 - 0.51,
-    #     start_shift + 180 + 0.51,
-    #     (0, 1, 0),
-    #     width,
-    # )
-    # draw_arc(
-    #     context,
-    #     (200, 200),
-    #     radius,
-    #     start_shift + 180 + 120 - 0.51,
-    #     start_shift + 180 + 120 + 0.51,
-    #     (1, 0, 0),
-    #     width,
-    # )
-    # draw_arc(
-    #     context,
-    #     (200, 200),
-    #     radius,
-    #     start_shift + 180 + 225 - 0.51,
-    #     start_shift + 180 + 225 + 0.51,
-    #     (0, 0, 1),
-    #     width,
-    # )
+    def _arc(angle, expansion, color):
+        return Arc(
+            radius,
+            angle - expansion,
+            angle + expansion,
+            stroke_width=width,
+            color=color,
+        )
+
+    for i in range(0, 360, 15):
+        arcs.append(_arc(i, 0.25, "white"))
+
+    arcs.append(_arc(180, 0.5, "green"))
+    arcs.append(_arc(180 + 120, 0.5, "red"))
+    arcs.append(_arc(180 + 225, 0.5, "blue"))
+    return arcs
 
 
 class TimeDial(Group):

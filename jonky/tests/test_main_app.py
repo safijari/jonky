@@ -52,7 +52,8 @@ class Test(Jonky):
                     + [DigitalClock("US/Eastern", "mononoki", 30, "Dallan")],
                     Packing.VERTICAL,
                 ).set_pose(0, 500),
-                Group([TimeDial(200, 100)]).set_pose(500, 500),
+                TimeDial(150, 20).set_pose(500, 500),
+                TimeDial(180, 20).set_pose(500, 500, 90),
             ]
         )
 

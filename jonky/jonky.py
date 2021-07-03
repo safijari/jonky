@@ -4,6 +4,8 @@ from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
 
+Gdk.EventExpose()
+
 
 class Jonky(object):
     """Base class for handling the window and other things
@@ -18,6 +20,7 @@ class Jonky(object):
         self.last_run_time = None
         rww = self.root.get_width()
         rwh = self.root.get_height()
+        # self.root.connect("do_expose_event", self.draw_buffer)
         self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, rww, rwh)
         self.cairo_context = cairo.Context(self.buffer)
         self.cairo_context_root = self.root.cairo_create()
