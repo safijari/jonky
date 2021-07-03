@@ -1,5 +1,5 @@
 from jonky import Jonky
-from jonky.drawable import Text, Pose, Image, Group, Packing
+from jonky.drawable import Text, Pose, Image, Group, Packing, Circle
 from jonky.widgets import DigitalClock
 from PIL import Image as PImage
 from PIL import ImageFilter
@@ -49,6 +49,9 @@ class Test(Jonky):
                     ],
                     Packing.VERTICAL,
                 ).set_pose(0, 500),
+                Circle(100, stroke_width=10, color="black"
+                       ,fill_color="red"
+                       ).set_pose(100, 100),
             ]
         )
 

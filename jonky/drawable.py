@@ -7,7 +7,11 @@ from PIL import Image as PImage
 import PIL
 from enum import Enum
 
-_ccf = convert_color_float
+
+def _ccf(color):
+    if color is None:
+        return color
+    return convert_color_float(color)
 
 
 class Pose:
@@ -37,6 +41,41 @@ class Pose:
         return Pose(a.x + b.x, a.y + b.y, a.yaw + b.yaw)
 
 
+class Color:
+    def __init__(self, r=0, g=0, b=0, a=1):
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
+        if any([r > 1, g > 1, b > 1, a > 1]):
+            self.r = r / 255
+            self.g = g / 255
+            self.b = b / 255
+            self.a = a / 255
+
+    @classmethod
+    def named(cls, name, alpha=1.0):
+        return cls(*(_ccf(name)), alpha)
+
+    @property
+    def tup(self):
+        return (self.r, self.g, self.b, self.a)
+
+    @classmethod
+    def new(cls, inp):
+        if inp is None:
+            return cls()
+        if isinstance(inp, cls):
+            return inp
+        if isinstance(inp, str):
+            return Color.named(inp)
+        if isinstance(inp, tuple):
+            assert len(tuple) in [3, 4], "color invalid"
+            if len(inp) == 3:
+                return cls(*inp, 1.0)
+            return cls(*inp)
+
+
 @dataclass
 class Rect:
     x: float
@@ -58,10 +97,7 @@ class Drawable:
     """
 
     def __init__(self, pose=None, color=None, pose_transformer=None):
-        if color is None:
-            color = (0, 0, 0)
-        color = _ccf(color)
-        self.color = color
+        self.color = Color.new(color)
         if pose is None:
             pose = Pose()
         self._pose = pose
@@ -91,6 +127,15 @@ class Drawable:
         self.pose_transformer = transformer
         return self
 
+    def pre_draw(self, ctx):
+        ctx.save()
+        ctx.set_source_rgba(*(self.color.tup))
+        ctx.translate(self.pose.x, self.pose.y)
+        ctx.rotate(self.pose.yaw_rad)
+
+    def post_draw(self, ctx):
+        ctx.restore()
+
     def draw(self, ctx):
         pass
 
@@ -106,9 +151,7 @@ class Group(Drawable):
         self.nodes = nodes
 
     def draw(self, ctx):
-        ctx.save()
-        ctx.translate(self.pose.x, self.pose.y)
-        ctx.rotate(self.pose.yaw_rad)
+        self.pre_draw(ctx)
         rect = Rect(self.pose.x, self.pose.y, 0, 0)
         for i, node in enumerate(self.nodes):
             if self.packing != Packing.NONE:
@@ -119,7 +162,7 @@ class Group(Drawable):
             _rect = node.draw(ctx)
             rect.w += _rect.w
             rect.h += _rect.h
-        ctx.restore()
+        self.post_draw(ctx)
         return rect
 
 
@@ -141,22 +184,19 @@ class Text(Drawable):
         w = 0
         h = 0
         for line in self.text.split("\n"):
-            ctx.save()
             ctx.select_font_face(self.font)
             ctx.set_font_size(self.font_size)
             (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
             w = max(width, w)
-            ctx.set_source_rgb(*(self.color))
 
-            ctx.translate(self.pose.x, self.pose.y)
-            ctx.rotate(self.pose.yaw_rad)
+            self.pre_draw(ctx)
             ctx.translate(0, yshift)
             # ctx.translate(-x - width / 2, -y - self.font_size / 2)
 
             ctx.show_text(line)
             ctx.stroke()
             yshift += self.font_size
-            ctx.restore()
+            self.post_draw(ctx)
         h = yshift
         return Rect(x, y, w, h)
 
@@ -174,11 +214,9 @@ class Image(Drawable):
 
     def draw(self, ctx: cairo.Context):
         super(Image, self).draw(ctx)
-        ctx.save()
+        self.pre_draw(ctx)
         ctx.set_source_rgba(0, 0, 0, 0.0)
 
-        ctx.translate(self.pose.x, self.pose.y)
-        ctx.rotate(self.pose.yaw_rad)
         # ctx.translate(-self.src.get_width() / 2, -self.src.get_height() / 2)
 
         ctx.rectangle(0, 0, self.src.get_width(), self.src.get_height())
@@ -186,5 +224,35 @@ class Image(Drawable):
         ctx.clip()
         ctx.paint()
 
-        ctx.restore()
+        self.post_draw(ctx)
         return Rect(0, 0, self.src.get_width(), self.src.get_height())
+
+
+class Shape(Drawable):
+    def __init__(self, stroke_width=1, fill_color=None, *args, **kwargs):
+        super(Shape, self).__init__(*args, **kwargs)
+        # assert fill_color is None
+        self.fill_color = Color.new(fill_color) if fill_color else None
+        self.stroke_width = stroke_width
+
+    def draw(self, ctx: cairo.Context):
+        pass
+
+
+class Circle(Shape):
+    def __init__(self, radius, *args, **kwargs):
+        super(Circle, self).__init__(*args, **kwargs)
+        self.radius = radius
+
+    def draw(self, ctx: cairo.Context):
+        self.pre_draw(ctx)
+        ctx.set_line_width(self.stroke_width)
+        ctx.arc(0, 0, self.radius, 0, math.pi * 2)
+        if self.fill_color:
+            ctx.set_source_rgba(*(self.fill_color.tup))
+            ctx.fill_preserve()
+            ctx.set_source_rgba(*(self.color.tup))
+            ctx.stroke()
+        else:
+            ctx.stroke()
+        self.post_draw(ctx)

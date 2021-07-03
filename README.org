@@ -8,8 +8,8 @@
      - Rectangles
      - Polygons
      - FontAwesome
-     - Images/SVGs
-     - ?
+     - Images
+     - SVGs
    - A mechanism to call various functions at various times
    - A mechanism for caching
    - A way to create a live wallpaper that's controlled by time of day
