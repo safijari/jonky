@@ -55,3 +55,17 @@
     The trouble is that with every draw call, you'd draw everything. That's a fair bit on unnecessary compute (come to think of it this is true for a lot of things, e.g. animated text)
     
     So, we should have a BakedGroup. The point of the baked group is to do the drawing once (or on special calls) and to save them to a surface. Then draw the surface every time rather than repeat the potentially expensive operations
+*** ??? Some sort of a transformer API?
+    Like, attach a transformer to any signal of any drawable and have that signal be updated by the transformer.
+    
+    e.g. DigitalClock is actually just Text with a Transfomer that updates the .text field
+    or   the full time dial is just a bunch of TimeDials with a single line on top, and that pose of that line can be passed off to a Transformer
+    etc
+** Widgets
+*** Digital clock
+    Basic digital clock with minimal formatting and some suffix allowed. Timezone needs to be provided (or sytem timezone will be used???)
+*** 24 Hour Multi Timezone Clock
+    It's something I use, pictures help better than words
+*** Day calendar
+    Basic vertical calendar that shows N hours before and N hours after and has a transformation emphasizing closer events more.
+    - Need a way to supply/update events

@@ -20,7 +20,6 @@ class Jonky(object):
         self.last_run_time = None
         rww = self.root.get_width()
         rwh = self.root.get_height()
-        # self.root.connect("do_expose_event", self.draw_buffer)
         self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, rww, rwh)
         self.cairo_context = cairo.Context(self.buffer)
         self.cairo_context_root = self.root.cairo_create()
@@ -42,6 +41,9 @@ class Jonky(object):
     def draw_buffer(self):
         crr = self.cairo_context_root
         crr.save()
+        crr.set_source_rgb(1.0, 1.0, 1.0)
+        crr.set_operator(cairo.OPERATOR_SOURCE)
+        crr.paint()
         crr.set_source_surface(self.buffer)
         crr.paint()
         crr.restore()

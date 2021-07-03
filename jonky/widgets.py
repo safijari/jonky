@@ -1,16 +1,36 @@
-from jonky.drawable import Text, Drawable, Group, Arc, Color, Rect
+from jonky.drawable import Text, Drawable, Group, Arc, Color, Rect, Polygon
+from jonky.widget_helpers import datetime_to_string, draw_ring, ampm
 import maya
+import time
+import random
 
 
-def datetime_to_string(dt):
-    am = "am"
-    h = dt.hour
-    if h == 0:
-        h = 12
-    if h > 12:
-        h = h % 12
-        am = "pm"
-    return f"{str(h).zfill(2)}:{str(dt.minute).zfill(2)}:{str(dt.second).zfill(2)} {am}"
+def fn(x):
+    s = 3
+    sgn = -1
+    if s % 2 == 1:
+        sgn = 1
+    if x < 0.5:
+        return -(((x) * 2) ** s) + 1
+    return -(sgn * ((x - 1.0) * 2) ** s + 1)
+
+
+def ht_xform(x):
+    return (1 - fn(x)) / 2
+
+
+def fn_font(x):
+    s = 1
+    sgn = -1
+    if s % 2 == 1:
+        sgn = 1
+    if x < 0.5:
+        return -(((x) * 2) ** s) + 1
+    return ((x - 1.0) * 2) ** s + 1
+
+
+def ht_font(x):
+    return float(1 - fn_font(x))
 
 
 class DigitalClock(Text):
@@ -29,101 +49,6 @@ class DigitalClock(Text):
         pass
 
 
-def _f(val1, val2, frac):
-    return (val1 * frac) + val2 * (1 - frac)
-
-
-def interpolate_col(c1, c2, frac):
-    r1, g1, b1 = c1[:3]
-    r2, g2, b2 = c2[:3]
-    return (_f(r1, r2, frac), _f(g1, g2, frac), _f(b1, b2, frac))
-
-
-def normalize_color(col):
-    if any([c > 1 for c in col]):
-        return [c / 255.0 for c in col]
-    return col
-
-
-def arc_with_start_end_colors(
-    radius, start_deg, stop_deg, width, start_col, end_col, subdivision=1
-):
-    start_col = Color.new(start_col)
-    end_col = Color.new(end_col)
-    arcs = []
-    for i in range(start_deg, stop_deg, subdivision):
-        arcs.append(
-            Arc(
-                radius,
-                i - subdivision / 6,
-                i + subdivision + subdivision / 6,
-                color=interpolate_col(
-                    end_col.tup, start_col.tup, (i - start_deg) / (stop_deg - start_deg)
-                ),
-                stroke_width=width,
-            )
-        )
-
-    return arcs
-
-
-def draw_ring(radius, width):
-    # background white bit
-    arcs = []
-    arcs.extend(arc_with_start_end_colors(radius, 0, 360, width + 5, "white", "white"))
-    start_col = (165 * 0.5, 135 * 0.5, 0)
-    end_col = (247, 227, 5)
-
-    arcs.extend(
-        arc_with_start_end_colors(radius, 180 - 25, 180 + 45, width, start_col, end_col)
-    )
-
-    start_col = end_col
-    end_col = (78, 84, 129)
-
-    arcs.extend(
-        arc_with_start_end_colors(radius, 180 + 45, 360 - 25, width, start_col, end_col)
-    )
-
-    start_col = end_col
-    end_col = (0.1, 0.1, 0.1)
-
-    arcs.extend(
-        arc_with_start_end_colors(radius, 360 - 25, 360 + 30, width, start_col, end_col)
-    )
-
-    start_col = end_col
-
-    arcs.extend(
-        arc_with_start_end_colors(radius, 30, 90 + 25, width, start_col, end_col)
-    )
-
-    start_col = end_col
-    end_col = (165 * 0.5, 135 * 0.5, 0)
-    arcs.extend(
-        arc_with_start_end_colors(radius, 90 + 25, 180 - 25, width, start_col, end_col)
-    )
-
-    width = width * 0.5
-
-    def _arc(angle, expansion, color):
-        return Arc(
-            radius,
-            angle - expansion,
-            angle + expansion,
-            stroke_width=width,
-            color=color,
-        )
-
-    for i in range(0, 360, 15):
-        arcs.append(_arc(i, 0.25, "white"))
-
-    arcs.append(_arc(180, 0.5, "green"))
-    arcs.append(_arc(180 + 120, 0.5, "red"))
-    arcs.append(_arc(180 + 225, 0.5, "blue"))
-    return arcs
-
-
 class TimeDial(Group):
     def __init__(self, radius, width, *args, **kwargs):
         super(TimeDial, self).__init__(draw_ring(radius, width), *args, **kwargs)
@@ -132,3 +57,119 @@ class TimeDial(Group):
     def draw(self, ctx, do_xform=True):
         super(TimeDial, self).draw(ctx, do_xform)
         return Rect(0, 0, 1000, 1000)
+
+
+def make_scaler(max_val, intify=False):
+    def scaler(frac):
+        out = max_val * frac
+        if intify:
+            out = int(out)
+        return out
+
+    return scaler
+
+
+class LineWithText(Group):
+    def __init__(self, font, font_size, text, width, stroke_width, *args, **kwargs):
+        self.nodes = []
+        super(LineWithText, self).__init__(*args, **kwargs)
+        self.width = width
+        self.stroke_width = stroke_width
+        self.text = Text(
+            font, font_size, text, on_bottom=True, color=self.color
+        ).set_pose(x=self.stroke_width * 2, y=-self.stroke_width * 3)
+        self.line = Polygon(
+            [(0, 0), (width, 0)], stroke_width=stroke_width, color=self.color
+        )
+        self.nodes = [self.text, self.line]
+
+
+class DayCal(Group):
+    def __init__(
+        self,
+        height,
+        width,
+        stroke_width,
+        nodes=None,
+        time_function=None,
+        *args,
+        **kwargs
+    ):
+        super(DayCal, self).__init__([], *args, **kwargs)
+        self.height = height
+        self.width = width
+        _s = make_scaler(self.height)
+        self._s = _s
+        self.side_lines = []
+        self.side_lines.append(
+            Polygon(
+                [(0, 0), (0, self.height)], stroke_width=stroke_width, color=self.color
+            ),
+        )
+        self.side_lines.append(
+            Polygon(
+                [(self.width, 0), (self.width, self.height)],
+                stroke_width=stroke_width,
+                color=self.color,
+            ),
+        )
+        self.lines = [
+            LineWithText(
+                "mononoki",
+                self.height * 0.02,
+                str(i),
+                self.width,
+                stroke_width,
+                color=self.color,
+            ).set_pose(y=_s(i * 0.1))
+            for i in range(40)
+        ]
+
+        def time_function():
+            try:
+                st = time_function.start_time
+            except Exception:
+                time_function.start_time = time.time()
+                st = time_function.start_time
+            return (time.time() - st) * 60 * 60 + st
+
+        self.time_function = (
+            time_function if time_function is not None else (lambda: time.time())
+        )
+
+    def draw(self, ctx):
+        _s = self._s
+        final_lines = []
+        timestamp = self.time_function()
+        le_time = maya.Datetime.fromtimestamp(timestamp)
+        offset = le_time.minute * 60
+        hr = le_time.hour
+
+        th = 25 * 3600
+
+        i = 0
+        res = 0.5 - offset / th
+        while res > 0:
+            l = self.lines[i]
+            l.set_pose(y=_s(ht_xform(res)))
+            l.text.text = ampm(hr)
+            l.text.font_size = _s(ht_font(res)) * 0.02
+            final_lines.append(l)
+            res -= 3600 / th
+            hr -= 1
+            i += 1
+
+        hr = le_time.hour + 1
+        res = 0.5 + (3600 - offset) / th
+        while res < 1.3:
+            l = self.lines[i]
+            l.set_pose(y=_s(ht_xform(res)))
+            l.text.text = ampm(hr)
+            l.text.font_size = _s(ht_font(res)) * 0.02
+            final_lines.append(l)
+            res += 3600 / th
+            hr += 1
+            i += 1
+
+        self.nodes = self.side_lines + final_lines
+        super(DayCal, self).draw(ctx)

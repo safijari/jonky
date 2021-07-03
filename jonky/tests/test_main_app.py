@@ -1,6 +1,17 @@
 from jonky import Jonky
-from jonky.drawable import Text, Pose, Image, Group, Packing, Circle, BakedGroup, Arc
-from jonky.widgets import DigitalClock, TimeDial
+from jonky.drawable import (
+    Text,
+    Pose,
+    Image,
+    Group,
+    Packing,
+    Circle,
+    BakedGroup,
+    Arc,
+    Polygon,
+    Color,
+)
+from jonky.widgets import DigitalClock, TimeDial, DayCal
 from PIL import Image as PImage
 from PIL import ImageFilter
 from libjari.jpath import JPath
@@ -23,6 +34,12 @@ class Test(Jonky):
                         filter=ImageFilter.GaussianBlur(5)
                     )
                 ),
+                Polygon(
+                    [(100, 100), (200, 200), (100, 300)],
+                    stroke_width=10,
+                    color=(1.0, 0, 0, 1.0),
+                    fill_color=(1.0, 0, 0, 0.1),
+                ).set_pose_transformer(transform_pose),
                 Text(
                     "Ubuntu mono",
                     20,
@@ -45,15 +62,16 @@ class Test(Jonky):
                     100, 0, 45, stroke_width=10, color="black", fill_color="red"
                 ).set_pose(100, 100),
                 Group(
-                    [
+                    [DigitalClock("US/Eastern", "mononoki", 30, "Dallan")]
+                    + [
                         Image(path.str)
                         for path in JPath.from_home("Pictures").glob_list("tag*png")
-                    ]
-                    + [DigitalClock("US/Eastern", "mononoki", 30, "Dallan")],
+                    ],
                     Packing.VERTICAL,
                 ).set_pose(0, 500),
                 TimeDial(150, 20).set_pose(500, 500),
                 TimeDial(180, 20).set_pose(500, 500, 90),
+                DayCal(1080, 300, 1, color=Color.named("white", 1.0)).set_pose(1500),
             ]
         )
 

@@ -92,6 +92,29 @@ class Rect:
         return self.x + self.w
 
 
+@dataclass
+class Point2:
+    x: float
+    y: float
+
+    @classmethod
+    def from_tup(cls, tup):
+        return cls(*tup)
+
+    @classmethod
+    def new(cls, inp):
+        if isinstance(inp, Point2):
+            return inp
+        if isinstance(inp, tuple):
+            return cls.from_tup(inp)
+
+        raise Exception("can't make point2")
+
+    @property
+    def tup(self):
+        return (self.x, self.y)
+
+
 class Packing(Enum):
     NONE = "none"
     VERTICAL = "vertical"
@@ -104,8 +127,9 @@ class Drawable:
 
     """
 
-    def __init__(self, pose=None, color=None, pose_transformer=None):
+    def __init__(self, pose=None, color=None, fill_color=None, pose_transformer=None):
         self.color = Color.new(color)
+        self.fill_color = Color.new(fill_color) if fill_color else None
         if pose is None:
             pose = Pose()
         self._pose = pose
@@ -138,6 +162,8 @@ class Drawable:
     def pre_draw(self, ctx, do_xform=True):
         ctx.save()
         ctx.set_source_rgba(*(self.color.tup))
+        if self.color.a != 1.0 or (self.fill_color and self.fill_color.a != 1.0):
+            ctx.set_operator(cairo.OPERATOR_ATOP)
         if do_xform:
             ctx.translate(self.pose.x, self.pose.y)
             ctx.rotate(self.pose.yaw_rad)
@@ -150,16 +176,17 @@ class Drawable:
 
 
 class Group(Drawable):
-    def __init__(self, nodes, packing=None, pack_padding=0, *args, **kwargs):
+    def __init__(self, nodes=None, packing=None, pack_padding=0, *args, **kwargs):
         super(Group, self).__init__(*args, **kwargs)
         self.packing = packing
         self.pack_padding = pack_padding
         if packing is None:
             self.packing = Packing.NONE
         assert self.packing != Packing.GRID
-        self.nodes = nodes
+        self.nodes = nodes if nodes is not None else []
 
     def draw(self, ctx, do_xform=True):
+        # print(f"drawing {type(self)}")
         self.pre_draw(ctx, do_xform)
         rect = Rect(self.pose.x, self.pose.y, 0, 0)
         x2 = 0
@@ -224,11 +251,12 @@ class Text(Drawable):
 
     """
 
-    def __init__(self, font, font_size, text, *args, **kwargs):
+    def __init__(self, font, font_size, text, on_bottom=False, *args, **kwargs):
         super(Text, self).__init__(*args, **kwargs)
         self.font = font
         self.font_size = font_size
         self.text = text
+        self.on_bottom = on_bottom
 
     def draw(self, ctx):
         super(Text, self).draw(ctx)
@@ -244,7 +272,8 @@ class Text(Drawable):
 
             self.pre_draw(ctx)
             ctx.translate(0, yshift)
-            ctx.translate(-x, -y)
+            if not self.on_bottom:
+                ctx.translate(-x, -y)
 
             ctx.show_text(line)
             ctx.stroke()
@@ -282,10 +311,9 @@ class Image(Drawable):
 
 
 class Shape(Drawable):
-    def __init__(self, stroke_width=1, fill_color=None, *args, **kwargs):
+    def __init__(self, stroke_width=1, *args, **kwargs):
         super(Shape, self).__init__(*args, **kwargs)
         # assert fill_color is None
-        self.fill_color = Color.new(fill_color) if fill_color else None
         self.stroke_width = stroke_width
 
     def draw(self, ctx: cairo.Context):
@@ -323,3 +351,26 @@ class Arc(Shape):
 class Circle(Arc):
     def __init__(self, radius, *args, **kwargs):
         super(Circle, self).__init__(radius, 0, math.pi * 2, *args, **kwargs)
+
+
+class Polygon(Shape):
+    def __init__(self, point_list, *args, **kwargs):
+        super(Polygon, self).__init__(*args, **kwargs)
+        self.point_list = [Point2.new(p) for p in point_list]
+
+    def draw(self, ctx: cairo.Context):
+        self.pre_draw(ctx)
+        ctx.set_line_width(self.stroke_width)
+        ctx.move_to(*(self.point_list[0].tup))
+        for pt in self.point_list[1:]:
+            ctx.line_to(*(pt.tup))
+
+        if self.fill_color:
+            ctx.set_source_rgba(*(self.fill_color.tup))
+            ctx.fill_preserve()
+            ctx.set_source_rgba(*(self.color.tup))
+            ctx.stroke()
+        else:
+            ctx.stroke()
+        self.post_draw(ctx)
+        return Rect(0, 0, 1, 1)
