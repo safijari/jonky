@@ -12,6 +12,7 @@ class Jonky(object):
 
     def __init__(self, period_in_sec=0.5, target_size=None):
         super(Jonky, self).__init__()
+        self.start_time = time.time()
         self.period_in_sec = period_in_sec
         self.root = Gdk.get_default_root_window()
         self.last_run_time = None
@@ -54,5 +55,7 @@ class Jonky(object):
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
         for item in self.items:
+            if item.pose_transformer:
+                item.pose_transformer(item._pose_correction, self.curr_time - self.start_time)
             item.draw(cr)
         self.root.process_all_updates()

@@ -1,8 +1,16 @@
 from jonky import Jonky
-from jonky.drawable import Text, Pose, Image
+from jonky.drawable import Text, Pose, Image, Group, Packing
 from jonky.widgets import DigitalClock
 from PIL import Image as PImage
 from PIL import ImageFilter
+from libjari.jpath import JPath
+
+import math
+
+
+def transform_pose(pose, time):
+    pose.x = math.sin(time) * 30
+    pose.yaw = math.sin(time) * 30
 
 
 class Test(Jonky):
@@ -15,16 +23,38 @@ class Test(Jonky):
                         filter=ImageFilter.GaussianBlur(5)
                     )
                 ),
-                Text("mononoki", 100, "hey\nshithead", color=(1, 0.5, 0.5)).set_pose(350, 350),
-                DigitalClock("US/Pacific", "mononoki", 50, "Office", color="blue").set_pose(100, 100),
-                DigitalClock("US/Eastern", "mononoki", 50, "Dallan").set_pose(100, 150),
-                DigitalClock("Europe/Berlin", "mononoki", 50, "Local").set_pose(100, 200),
+                Text(
+                    "Ubuntu mono",
+                    20,
+                    "Theree once was a\nship that took to see",
+                    color="black",
+                )
+                .set_pose(250, 350)
+                .set_pose_transformer(transform_pose),
+                Group(
+                    [
+                        DigitalClock(
+                            "US/Pacific", "mononoki", 30, "Office", color="blue"
+                        ),
+                        DigitalClock("US/Eastern", "mononoki", 30, "Dallan"),
+                        DigitalClock("Europe/Berlin", "mononoki", 30, "Local"),
+                    ],
+                    Packing.VERTICAL,
+                    50,
+                ).set_pose(400, 100, 45),
+                Group(
+                    [
+                        Image(path.str)
+                        for path in JPath.from_home("Pictures").glob_list("tag*png")
+                    ],
+                    Packing.VERTICAL,
+                ).set_pose(0, 500),
             ]
         )
 
 
 if __name__ == "__main__":
-    Test(period_in_sec=1, target_size=(1920, 1080)).run()
+    Test(period_in_sec=0.01, target_size=(1920, 1080)).run()
 
 # import cairo
 

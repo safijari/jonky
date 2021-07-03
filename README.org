@@ -32,6 +32,9 @@
     - Supply =draw= function
     - Define pose in either screen space fractions or pixels
       - (how to convert screen space fractions to pixels?)
+**** class Group [X]
+     - Helper for grouping things together so they're easy to transform
+     - Allow packing options: vertically, horizontally, grid (not implemented yet)
 **** class Text [X]
      - Initialize with font name, text size (and optional bounds?)
      - Shadow or stoke option?
@@ -46,4 +49,3 @@
       - Init with radius + inherit
 ***** class Rectangle
       - Init with w, h, [rounding radius] + inherit
-	

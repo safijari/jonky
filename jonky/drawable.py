@@ -5,6 +5,7 @@ import cairo
 from jonky.helpers import from_pil
 from PIL import Image as PImage
 import PIL
+from enum import Enum
 
 _ccf = convert_color_float
 
@@ -31,32 +32,95 @@ class Pose:
     def do_rotate(self):
         return self.yaw != 0
 
+    def __add__(self, b):
+        a = self
+        return Pose(a.x + b.x, a.y + b.y, a.yaw + b.yaw)
+
+
+@dataclass
+class Rect:
+    x: float
+    y: float
+    w: float
+    h: float
+
+
+class Packing(Enum):
+    NONE = "none"
+    VERTICAL = "vertical"
+    HORIZONTAL = "horizontal"
+    GRID = "grid"
+
 
 class Drawable:
     """Documentation for Drawable
 
     """
 
-    def __init__(self, pose=None, color=None):
+    def __init__(self, pose=None, color=None, pose_transformer=None):
         if color is None:
             color = (0, 0, 0)
         color = _ccf(color)
         self.color = color
         if pose is None:
             pose = Pose()
-        self.pose = pose
+        self._pose = pose
+        self._pose_correction = Pose()
+        self.pose_transformer = None
+
+    @property
+    def pose(self):
+        return self._pose + self._pose_correction
+
+    @pose.setter
+    def pose(self, val):
+        self._pose = val
 
     def set_pose(self, x=None, y=None, yaw=None):
+        p = self.pose
         if x:
-            self.pose.x = x
+            p.x = x
         if y:
-            self.pose.y = y
+            p.y = y
         if yaw:
-            self.yaw = yaw
+            p.yaw = yaw
+        self.pose = p
+        return self
+
+    def set_pose_transformer(self, transformer):
+        self.pose_transformer = transformer
         return self
 
     def draw(self, ctx):
         pass
+
+
+class Group(Drawable):
+    def __init__(self, nodes, packing=None, pack_padding=0, *args, **kwargs):
+        super(Group, self).__init__(*args, **kwargs)
+        self.packing = packing
+        self.pack_padding = pack_padding
+        if packing is None:
+            self.packing = Packing.NONE
+        assert self.packing != Packing.GRID
+        self.nodes = nodes
+
+    def draw(self, ctx):
+        ctx.save()
+        ctx.translate(self.pose.x, self.pose.y)
+        ctx.rotate(self.pose.yaw_rad)
+        rect = Rect(self.pose.x, self.pose.y, 0, 0)
+        for i, node in enumerate(self.nodes):
+            if self.packing != Packing.NONE:
+                if self.packing == Packing.VERTICAL:
+                    node.set_pose(0, rect.h + i * self.pack_padding)
+                if self.packing == Packing.HORIZONTAL:
+                    node.set_pose(rect.w + i * self.pack_padding, 0)
+            _rect = node.draw(ctx)
+            rect.w += _rect.w
+            rect.h += _rect.h
+        ctx.restore()
+        return rect
 
 
 class Text(Drawable):
@@ -73,21 +137,28 @@ class Text(Drawable):
     def draw(self, ctx):
         super(Text, self).draw(ctx)
         yshift = 0
+        x, y = self.pose.x, self.pose.y
+        w = 0
+        h = 0
         for line in self.text.split("\n"):
             ctx.save()
             ctx.select_font_face(self.font)
             ctx.set_font_size(self.font_size)
             (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
+            w = max(width, w)
             ctx.set_source_rgb(*(self.color))
 
-            ctx.translate(self.pose.x, self.pose.y + yshift)
+            ctx.translate(self.pose.x, self.pose.y)
             ctx.rotate(self.pose.yaw_rad)
+            ctx.translate(0, yshift)
             # ctx.translate(-x - width / 2, -y - self.font_size / 2)
 
             ctx.show_text(line)
             ctx.stroke()
             yshift += self.font_size
             ctx.restore()
+        h = yshift
+        return Rect(x, y, w, h)
 
 
 class Image(Drawable):
@@ -98,7 +169,8 @@ class Image(Drawable):
             self.src = from_pil(PImage.open(src))
 
         # apparently there's no good way to figure out if an image is a PIL image ...
-        self.src = from_pil(src)
+        if self.src is None:
+            self.src = from_pil(src)
 
     def draw(self, ctx: cairo.Context):
         super(Image, self).draw(ctx)
@@ -115,3 +187,4 @@ class Image(Drawable):
         ctx.paint()
 
         ctx.restore()
+        return Rect(0, 0, self.src.get_width(), self.src.get_height())
