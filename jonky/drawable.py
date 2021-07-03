@@ -180,17 +180,19 @@ class BakedGroup(Group):
     def draw(self, ctx: cairo.Context):
         if not self.surface:
             size = super(BakedGroup, self).draw(ctx, True)
-            print(size)
-            self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size.w, size.h)
+            self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, int(size.w + 1)*2, int(size.h + 1)*2)
             surface_ctx = cairo.Context(self.surface)
+            surface_ctx.scale(2.0, 2.0)
 
             surface_ctx.set_source_rgba(1.0, 1.0, 1.0, 0.0)
             surface_ctx.set_operator(cairo.OPERATOR_SOURCE)
             surface_ctx.paint()
 
             super(BakedGroup, self).draw(surface_ctx, False)
+            # self.surface.write_to_png("/tmp/test.png")
         else:
             self.pre_draw(ctx, True)
+            ctx.scale(0.5, 0.5)
             ctx.rectangle(0, 0, self.surface.get_width(), self.surface.get_height())
             ctx.set_source_rgba(0, 0, 0, 0.0)
             ctx.set_source_surface(self.surface)
@@ -225,7 +227,7 @@ class Text(Drawable):
 
             self.pre_draw(ctx)
             ctx.translate(0, yshift)
-            # ctx.translate(-x - width / 2, -y - self.font_size / 2)
+            ctx.translate(-x, -y)
 
             ctx.show_text(line)
             ctx.stroke()

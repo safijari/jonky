@@ -31,10 +31,10 @@ class Test(Jonky):
                 )
                 .set_pose(250, 350)
                 .set_pose_transformer(transform_pose),
-                Group(
+                BakedGroup(
                     [
                         DigitalClock(
-                            "US/Pacific", "mononoki", 30, "Office", color="blue"
+                            "US/Pacific", "mononoki", 30, "Office", color="white"
                         ),
                         DigitalClock("Europe/Berlin", "mononoki", 30, "Local"),
                     ],
@@ -44,7 +44,7 @@ class Test(Jonky):
                 Circle(100, stroke_width=10, color="black", fill_color="red").set_pose(
                     100, 100
                 ),
-                BakedGroup(
+                Group(
                     [
                         Image(path.str)
                         for path in JPath.from_home("Pictures").glob_list("tag*png")

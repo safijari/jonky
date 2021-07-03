@@ -16,7 +16,9 @@ class Jonky(object):
         self.period_in_sec = period_in_sec
         self.root = Gdk.get_default_root_window()
         self.last_run_time = None
-        self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, target_size[0], target_size[1])
+        rww = self.root.get_width()
+        rwh = self.root.get_height()
+        self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, rww, rwh)
         self.cairo_context = cairo.Context(self.buffer)
         self.cairo_context_root = self.root.cairo_create()
         self.curr_time = time.time()
@@ -32,25 +34,26 @@ class Jonky(object):
                 self.draw()
                 self.last_run_time = self.curr_time
             self.draw_buffer()
-            time.sleep(self.period_in_sec / 10)
+            time.sleep(1/100)
 
     def draw_buffer(self):
+        crr = self.cairo_context_root
+        crr.save()
+        crr.set_source_surface(self.buffer)
+        crr.paint()
+        crr.restore()
+
+    def draw(self):
         if self.target_size:
             rww = self.root.get_width()
             rwh = self.root.get_height()
             sx = rww/self.target_size[0]
             sy = rwh/self.target_size[1]
 
-        crr = self.cairo_context_root
-        crr.save()
-        if self.target_size:
-            crr.scale(sx, sy)
-        crr.set_source_surface(self.buffer)
-        crr.paint()
-        crr.restore()
-
-    def draw(self):
         cr: cairo.Context = self.cairo_context
+        cr.save()
+        if self.target_size:
+            cr.scale(sx, sy)
         cr.set_source_rgb(1.0, 1.0, 1.0)
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
@@ -59,3 +62,4 @@ class Jonky(object):
                 item.pose_transformer(item._pose_correction, self.curr_time - self.start_time)
             item.draw(cr)
         self.root.process_all_updates()
+        cr.restore()
