@@ -9,7 +9,7 @@ from jonky.drawable import (
     Rectangle,
     Packing,
     Image,
-    PangoText
+    PangoText,
 )
 from jonky.widget_helpers import datetime_to_string, draw_ring, ampm
 import maya
@@ -53,7 +53,15 @@ def ht_font(x):
 
 class DigitalClock(PangoText):
     def __init__(
-            self, timezone, font, font_size, width=1000, show_seconds=False, suffix="", *args, **kwargs
+        self,
+        timezone,
+        font,
+        font_size,
+        width=1000,
+        show_seconds=False,
+        suffix="",
+        *args,
+        **kwargs,
     ):
         self.timezone = timezone
         self.suffix = suffix
@@ -120,9 +128,9 @@ class LineWithText(Group):
         super(LineWithText, self).__init__(*args, **kwargs)
         self.width = width
         self.stroke_width = stroke_width
-        self.text = PangoText(
-            font, font_size, text, color=self.color
-        ).set_pose(x=self.stroke_width * 2, y=-self.stroke_width * 3 - font_size)
+        self.text = PangoText(font, font_size, text, color=self.color).set_pose(
+            x=self.stroke_width * 2, y=-self.stroke_width * 3 - font_size
+        )
         self.line = Polygon(
             [(0, 0), (width, 0)], stroke_width=stroke_width, color=self.color
         )
@@ -148,9 +156,9 @@ class RectangleWithText(Group):
                 width, height, corner_radius, stroke_width=stroke_width, *args, **kwargs
             )
         ]
-        self.text = PangoText(font, font_size, text, width=width, color=self.color).set_pose(
-            corner_radius + stroke_width, corner_radius + stroke_width
-        )
+        self.text = PangoText(
+            font, font_size, text, width=width, color=self.color
+        ).set_pose(corner_radius + stroke_width, corner_radius + stroke_width)
         self.nodes.append(self.text)
 
 
@@ -172,7 +180,16 @@ class DayCal(Group):
         _s = make_scaler(self.height)
         self.font = font
         self._s = _s
-        self.side_lines = [Rectangle(width, height, 20, stroke_width, color=self.color, fill_color=Color.named("black", 0.65))]
+        self.side_lines = [
+            Rectangle(
+                width,
+                height,
+                20,
+                stroke_width,
+                color=self.color,
+                fill_color=Color.named("black", 0.65),
+            )
+        ]
         self.stroke_width = stroke_width
         self.lines = [
             LineWithText(
@@ -211,6 +228,13 @@ class DayCal(Group):
                     r[-1],
                 )
             )
+
+            if (event_times[-1][1] - event_times[-1][0]) == 3600 * 24:
+                event_times[-1] = (
+                    event_times[-1][0],
+                    event_times[-1][0] + 3600,
+                    event_times[-1][-1],
+                )
         self.events = event_times
 
     def draw(self, ctx):
@@ -262,8 +286,8 @@ class DayCal(Group):
         for et in self.events:
             if not (zero_time < et[0] < end_time or zero_time < et[1] < end_time):
                 continue
-            start_loc = (et[0] - zero_time) / th
-            end_loc = (et[1] - zero_time) / th
+            start_loc = (et[0] - zero_time + 30*60) / th
+            end_loc = (et[1] - zero_time + 30*60) / th
 
             font_size = _s(start_loc) * 0.01
             if start_loc < 0.2 or start_loc > 0.8:
@@ -299,24 +323,19 @@ _ds = datetime_strip_minutes_seconds
 
 
 def check():
-    return Image(
-        PImage.open(JPath.from_home("Downloads/check-circle-solid.png").str)
-    )
+    return Image(PImage.open(JPath.from_home("Downloads/check-circle-solid.png").str))
+
 
 def cross():
-    return Image(
-        PImage.open(JPath.from_home("Downloads/times-circle-solid.png").str)
-    )
+    return Image(PImage.open(JPath.from_home("Downloads/times-circle-solid.png").str))
+
 
 def sched():
-    return Image(
-        PImage.open(JPath.from_home("Downloads/calendar-solid.png").str)
-    )
+    return Image(PImage.open(JPath.from_home("Downloads/calendar-solid.png").str))
+
 
 def exclaim():
-    return Image(
-        PImage.open(JPath.from_home("Downloads/exclamation-solid.png").str)
-    )
+    return Image(PImage.open(JPath.from_home("Downloads/exclamation-solid.png").str))
 
 
 class OrgHabits(Group):
@@ -352,5 +371,7 @@ class OrgHabits(Group):
                         ims.append(le_im())
                     other_group.append(Group(ims))
             self.nodes.append(PangoText(self.font, 18, child.heading, color=self.color))
-            self.nodes.append(Group(other_group, packing=Packing.HORIZONTAL).set_scale(0.25))
+            self.nodes.append(
+                Group(other_group, packing=Packing.HORIZONTAL).set_scale(0.25)
+            )
         return super(OrgHabits, self).draw(ctx)
