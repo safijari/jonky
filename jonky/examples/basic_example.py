@@ -7,10 +7,10 @@ if __name__ == "__main__":
         Group(
             [
                 DigitalClock(
-                    "Europe/Berlin", "mononoki", 50, suffix="Local", color="white"
+                    "Europe/Berlin", "Courier", 50, suffix="Local", color="white"
                 ),
                 DigitalClock(
-                    "US/Pacific", "mononoki", 50, suffix="Office", color="gray"
+                    "US/Pacific", "Sans Serif", 50, suffix="Office", color="gray"
                 ),
             ],
             Packing.VERTICAL,

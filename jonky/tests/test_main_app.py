@@ -38,7 +38,7 @@ class Test(Jonky):
                     )
                 ),
                 Text(
-                    "Ubuntu mono",
+                    "Sans Serif",
                     20,
                     "Theree once was a\nship that took to see",
                     color="black",
@@ -48,15 +48,15 @@ class Test(Jonky):
                 Group(
                     [
                         DigitalClock(
-                            "US/Pacific", "mononoki", 30, "Office", color="white"
+                            "US/Pacific", "Sans Serif", 30, "Office", color="white"
                         ),
-                        DigitalClock("Europe/Berlin", "mononoki", 30, "Local"),
+                        DigitalClock("Europe/Berlin", "Sans Serif", 30, "Local"),
                     ],
                     Packing.VERTICAL,
                     10,
                 ).set_pose(400, 100, 45),
                 Group(
-                    [DigitalClock("US/Eastern", "mononoki", 30, "Dallan")]
+                    [DigitalClock("US/Eastern", "Sans Serif", 30, "Dallan")]
                     + [
                         Image(path.str)
                         for path in JPath.from_home("Pictures").glob_list("tag*png")
@@ -71,7 +71,7 @@ class Test(Jonky):
                 Rectangle(
                     300, 100, 10, 5, color="white", fill_color=Color.named("blue", 0.5)
                 ).set_pose(100, 100),
-                PangoText("mononoki", 15, "heyhey").set_pose(200, 200)
+                PangoText("Sans Serif", 15, "heyhey").set_pose(200, 200)
             ]
         )
 
