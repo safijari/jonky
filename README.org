@@ -42,12 +42,12 @@
      - Initialize with a PIL image, or path, or svg (?)
      - resize?
      - filters?
-**** class Shape
+**** class Shape [X]
      - Base class for shapes
      - Give options for fill, stroke
-***** class Circle
+***** class Circle [X]
       - Init with radius + inherit
-***** class Rectangle
+***** class Rectangle [X]
       - Init with w, h, [rounding radius] + inherit
 *** ??? Some sort of a baking mechanism
     So, let's say you wanna draw a clock. You could make a rudimentary one with a group that draws a circle and the ticks and set it up so that the needles move based on the time.
@@ -69,3 +69,6 @@
 *** Day calendar
     Basic vertical calendar that shows N hours before and N hours after and has a transformation emphasizing closer events more.
     - Need a way to supply/update events
+** Installation
+   - Install pycairo (https://pycairo.readthedocs.io/en/latest/getting_started.html)
+   - More things?
