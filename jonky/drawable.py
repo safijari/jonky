@@ -230,7 +230,6 @@ class Group(Drawable):
                 rect.w = x2 - rect.x
                 rect.h = y2 - rect.y
         self.post_draw(ctx)
-        print(self.scale)
         rect.w *= self.scale
         rect.h *= self.scale
         return rect

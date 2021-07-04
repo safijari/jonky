@@ -327,7 +327,6 @@ class OrgHabits(Group):
 
     def draw(self, ctx):
         self.i += 1
-        print(self.i)
         self.nodes = []
         hb = orgload(self.filename)
         for child in hb.children:

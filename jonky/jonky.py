@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
+from jonky.drawable import Color
 
 class Jonky(object):
     """Base class for handling the window and other things
@@ -71,18 +72,19 @@ class Jonky(object):
 
 
 class JonkyImage:
-    def __init__(self, width, height, nodes, scale=1):
+    def __init__(self, width, height, nodes, background_color="black", scale=1):
         self.start_time = time.time()
         self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, width*scale, height*scale)
         self.cairo_context = cairo.Context(self.buffer)
         self.curr_time = time.time()
         self.scale = scale
+        self.background_color = Color.new(background_color)
         self.items = nodes
 
     def draw(self):
         cr: cairo.Context = self.cairo_context
         cr.save()
-        cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)
+        cr.set_source_rgba(*(self.background_color.tup))
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
         cr.scale(self.scale, self.scale)
