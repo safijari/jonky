@@ -1,10 +1,25 @@
-from jonky.drawable import Text, Drawable, Group, Arc, Color, Rect, Polygon, Rectangle
+from jonky.drawable import (
+    Text,
+    Drawable,
+    Group,
+    Arc,
+    Color,
+    Rect,
+    Polygon,
+    Rectangle,
+    Packing,
+    Image,
+)
 from jonky.widget_helpers import datetime_to_string, draw_ring, ampm
 import maya
 import time
 import random
 from bash import bash
 import os
+from orgparse import load as orgload
+from PIL import Image as PImage
+from libjari.jpath import JPath
+from datetime import datetime
 
 
 def fn(x):
@@ -36,15 +51,18 @@ def ht_font(x):
 
 
 class DigitalClock(Text):
-    def __init__(self, timezone, font, font_size, suffix="", *args, **kwargs):
+    def __init__(
+        self, timezone, font, font_size, show_seconds=False, suffix="", *args, **kwargs
+    ):
         self.timezone = timezone
         self.suffix = suffix
+        self.show_seconds = show_seconds
         super(DigitalClock, self).__init__(font, font_size, self.text, *args, **kwargs)
 
     @property
     def text(self):
         m = maya.when("now").datetime(to_timezone=self.timezone)
-        return datetime_to_string(m) + " " + self.suffix
+        return datetime_to_string(m, self.show_seconds) + " " + self.suffix
 
     @text.setter
     def text(self, val):
@@ -69,6 +87,31 @@ def make_scaler(max_val, intify=False):
         return out
 
     return scaler
+
+
+class ConcirCal(Group):
+    def __init__(self, radius, width, timezone, offsets, *args, **kwargs):
+        super(ConcirCal, self).__init__(*args, **kwargs)
+        self.nodes.append(TimeDial(radius, width))
+        for ofs in offsets:
+            self.nodes.append(
+                TimeDial(radius + width * 1.5, width).set_pose(yaw=-ofs * 15)
+            )
+        self.nodes.append(
+            Polygon(
+                [(0, 0), (-(radius + width * (1 + len(offsets))), 0)],
+                stroke_width=5,
+                color=Color.named("white", 0.5),
+            )
+        )
+        self.timezone = timezone
+
+    def draw(self, ctx):
+        m = maya.when("now").datetime(to_timezone=self.timezone)
+        hour_val = m.hour + m.minute / 60
+        angle = 360 / 24 * (hour_val) - 9 * 15
+        self.nodes[-1].set_pose(yaw=angle)
+        return super(ConcirCal, self).draw(ctx)
 
 
 class LineWithText(Group):
@@ -127,7 +170,7 @@ class DayCal(Group):
         self.width = width
         _s = make_scaler(self.height)
         self._s = _s
-        self.side_lines = [Rectangle(width, height, 20, stroke_width, color=self.color)]
+        self.side_lines = [Rectangle(width, height, 20, stroke_width, color=self.color, fill_color=Color.named("black", 0.65))]
         self.stroke_width = stroke_width
         self.lines = [
             LineWithText(
@@ -141,25 +184,19 @@ class DayCal(Group):
             for i in range(40)
         ]
 
-        def time_function():
-            try:
-                st = time_function.start_time
-            except Exception:
-                time_function.start_time = time.time()
-                st = time_function.start_time
-            return (time.time() - st) * 60 * 60 + st
-
         self.events = []
-        self.update_events()
 
         self.time_function = (
             time_function if time_function is not None else (lambda: time.time())
         )
 
+        self.update_events()
+
     def update_events(self):
         cal = str(
             bash(
-                f"gcalcli --calendar {os.environ['JONKY_EMAIL_ADDRESS']} agenda --details=length --tsv"
+                f"gcalcli --calendar {os.environ['JONKY_EMAIL_ADDRESS']} agenda --details=length --tsv "
+                + maya.when("yesterday").datetime().strftime("%Y-%m-%d")
             )
         )
         res = [line.split("\t") for line in cal.split("\n")]
@@ -208,6 +245,13 @@ class DayCal(Group):
             hr += 1
             i += 1
 
+        l = self.lines[i]
+        l.text.color = Color.named("red")
+        l.line.color = Color.named("red")
+        l.set_pose(y=_s(ht_xform(0.5)))
+        l.text.font_size = _s(ht_font(0.5)) * 0.01
+        l.text.text = "now"
+        final_lines.append(l)
         rects = []
 
         zero_time = timestamp - 12 * 3600
@@ -224,28 +268,87 @@ class DayCal(Group):
                 continue
             start_loc = _s(ht_xform(start_loc))
             end_loc = _s(ht_xform(end_loc))
-            # event_at(ht_xform(start_loc + 0.001), ht_xform(end_loc - 0.001))
-            # text_at(ht_xform((start_loc + end_loc)/2), 0.1, et[-1])
             rects.append(
-                # Rectangle(
-                #     self.width - self.stroke_width * 4,
-                #     end_loc - start_loc,
-                #     5,
-                #     color="blue",
-                #     fill_color=Color.named("white", 0.2),
-                # ).set_pose(self.stroke_width * 2, y=start_loc)
                 RectangleWithText(
                     self.width - self.stroke_width * 4,
                     end_loc - start_loc,
                     5,
                     "mononoki",
-                    min((end_loc - start_loc) * 0.5, self.height*0.05),
+                    min((end_loc - start_loc) * 0.25, self.height * 0.025),
                     et[-1],
                     stroke_width=self.stroke_width,
-                    color="blue",
-                    fill_color=Color.named("white", 0.2),
+                    color="E8E9A1",
+                    fill_color=Color.named("white", 0.4),
                 ).set_pose(self.stroke_width * 2, y=start_loc)
             )
 
         self.nodes = self.side_lines + final_lines + rects
         super(DayCal, self).draw(ctx)
+
+
+tsize = 20
+
+
+def datetime_strip_minutes_seconds(date: datetime):
+    return datetime(date.year, date.month, date.day)
+
+
+_ds = datetime_strip_minutes_seconds
+
+
+def check():
+    return Image(
+        PImage.open(JPath.from_home("Downloads/check-circle-solid.png").str)
+    )
+
+def cross():
+    return Image(
+        PImage.open(JPath.from_home("Downloads/times-circle-solid.png").str)
+    )
+
+def sched():
+    return Image(
+        PImage.open(JPath.from_home("Downloads/calendar-solid.png").str)
+    )
+
+def exclaim():
+    return Image(
+        PImage.open(JPath.from_home("Downloads/exclamation-solid.png").str)
+    )
+
+
+class OrgHabits(Group):
+    def __init__(self, filename, *args, **kwargs):
+        super(OrgHabits, self).__init__(*args, **kwargs)
+        self.filename = filename
+        self.packing = Packing.VERTICAL
+        self.pack_padding = 3
+        self.i = 0
+
+    def draw(self, ctx):
+        self.i += 1
+        print(self.i)
+        self.nodes = []
+        hb = orgload(self.filename)
+        for child in hb.children:
+            today = _ds(datetime.today())
+            dones = [((_ds(d.start) - today).days) for d in child.repeated_tasks]
+            alls = list(range(-5, 6, 1))
+            other_group = []
+            for i, a in enumerate(alls):
+                if a in dones:
+                    other_group.append(check())
+                else:
+                    ims = []
+                    if a < 0:
+                        le_im = cross
+                    else:
+                        le_im = sched
+                    ims.append(le_im())
+                    if a == 0:
+                        le_im = exclaim
+                        ims.append(le_im())
+                    other_group.append(Group(ims))
+            self.nodes.append(Text("mononoki", 20, child.heading, color=self.color))
+            self.nodes.append(Group(other_group, packing=Packing.HORIZONTAL).set_scale(0.25))
+        return super(OrgHabits, self).draw(ctx)

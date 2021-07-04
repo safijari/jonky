@@ -1,7 +1,7 @@
 from jonky.drawable import Text, Drawable, Group, Arc, Color, Rect
 
 
-def datetime_to_string(dt):
+def datetime_to_string(dt, show_seconds=True):
     am = "am"
     h = dt.hour
     if h == 0:
@@ -9,7 +9,11 @@ def datetime_to_string(dt):
     if h > 12:
         h = h % 12
         am = "pm"
-    return f"{str(h).zfill(2)}:{str(dt.minute).zfill(2)}:{str(dt.second).zfill(2)} {am}"
+    oot = f"{str(h).zfill(2)}:{str(dt.minute).zfill(2)}"
+    if show_seconds:
+        oot += f":{str(dt.second).zfill(2)}"
+    oot += f" {am}"
+    return oot
 
 
 def _f(val1, val2, frac):

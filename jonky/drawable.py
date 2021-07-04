@@ -1,3 +1,11 @@
+import gi
+
+gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
+
+from gi.repository import Pango as pango
+from gi.repository import PangoCairo as pangocairo
+
 from libjari.colors import convert_color_float
 import math
 from dataclasses import dataclass
@@ -127,7 +135,9 @@ class Drawable:
 
     """
 
-    def __init__(self, pose=None, color=None, fill_color=None, pose_transformer=None):
+    def __init__(
+        self, pose=None, color=None, scale=1.0, fill_color=None, pose_transformer=None
+    ):
         self.color = Color.new(color)
         self.fill_color = Color.new(fill_color) if fill_color else None
         if pose is None:
@@ -135,6 +145,7 @@ class Drawable:
         self._pose = pose
         self._pose_correction = Pose()
         self.pose_transformer = None
+        self.scale = scale
 
     @property
     def pose(self):
@@ -155,6 +166,10 @@ class Drawable:
         self.pose = p
         return self
 
+    def set_scale(self, scale):
+        self.scale = scale
+        return self
+
     def set_pose_transformer(self, transformer):
         self.pose_transformer = transformer
         return self
@@ -166,6 +181,8 @@ class Drawable:
             ctx.set_operator(cairo.OPERATOR_ATOP)
         if do_xform:
             ctx.translate(self.pose.x, self.pose.y)
+            if self.scale:
+                ctx.scale(self.scale, self.scale)
             ctx.rotate(self.pose.yaw_rad)
 
     def post_draw(self, ctx):
@@ -188,7 +205,7 @@ class Group(Drawable):
     def draw(self, ctx, do_xform=True):
         # print(f"drawing {type(self)}")
         self.pre_draw(ctx, do_xform)
-        rect = Rect(self.pose.x, self.pose.y, 0, 0)
+        rect = Rect(0, 0, 0, 0)
         x2 = 0
         y2 = 0
         for i, node in enumerate(self.nodes):
@@ -213,6 +230,9 @@ class Group(Drawable):
                 rect.w = x2 - rect.x
                 rect.h = y2 - rect.y
         self.post_draw(ctx)
+        print(self.scale)
+        rect.w *= self.scale
+        rect.h *= self.scale
         return rect
 
 
@@ -285,6 +305,64 @@ class Text(Drawable):
         return Rect(x, y, w, h)
 
 
+class PangoText(Drawable):
+    """Documentation for Text
+
+    """
+
+    def __init__(self, font, font_size, text, width=None, *args, **kwargs):
+        super(PangoText, self).__init__(*args, **kwargs)
+        self.font = font
+        self.font_size = font_size
+        self.text = text
+        self.width = width if width else 10000
+
+    def draw(self, ctx):
+        super(PangoText, self).draw(ctx)
+        self.pre_draw(ctx)
+
+        layout = pangocairo.create_layout(ctx)
+        layout.set_width(pango.units_from_double(10000))
+        layout.set_alignment(pango.Alignment.LEFT)
+        layout.set_font_description(
+            pango.FontDescription(f"{self.font} {self.font_size}")
+        )
+        layout.set_markup(self.text)
+
+        pangocairo.show_layout(ctx, layout)
+
+        r = layout.get_pixel_extents()[0]
+
+        self.post_draw(ctx)
+        return Rect(r.x, r.y, r.width, r.height)
+
+
+class Glyph(Drawable):
+    """Documentation for Text
+
+    """
+
+    def __init__(self, font, font_size, glyph_id, on_bottom=False, *args, **kwargs):
+        super(Glyph, self).__init__(*args, **kwargs)
+        self.font = font
+        self.font_size = font_size
+        self.glyph_id = glyph_id
+        self.on_bottom = on_bottom
+
+    def draw(self, ctx: cairo.Context):
+        self.pre_draw(ctx)
+        ctx.select_font_face(
+            self.font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
+        )
+        ctx.set_font_size(self.font_size)
+
+        ctx.show_glyphs([cairo.Glyph(self.glyph_id, 0, 0)])
+        ctx.stroke()
+        self.post_draw(ctx)
+
+        return Rect(0, 0, 1, 1)
+
+
 class Image(Drawable):
     def __init__(self, src, *args, **kwargs):
         super(Image, self).__init__(*args, **kwargs)
@@ -304,6 +382,7 @@ class Image(Drawable):
         # ctx.translate(-self.src.get_width() / 2, -self.src.get_height() / 2)
 
         ctx.rectangle(0, 0, self.src.get_width(), self.src.get_height())
+        ctx.set_operator(cairo.OPERATOR_ATOP)
         ctx.set_source_surface(self.src)
         ctx.clip()
         ctx.paint()
@@ -377,6 +456,7 @@ class Polygon(Shape):
         self.post_draw(ctx)
         return Rect(0, 0, 1, 1)
 
+
 class Rectangle(Shape):
     def __init__(self, width, height, corner_radius=0, *args, **kwargs):
         super(Rectangle, self).__init__(*args, **kwargs)
@@ -389,10 +469,10 @@ class Rectangle(Shape):
         w, h, r = self.width, self.height, self.corner_radius
         ctx.set_line_width(self.stroke_width)
         ctx.move_to(r, 0)
-        ctx.line_to(w-r, 0)
+        ctx.line_to(w - r, 0)
         if r != 0:
             ctx.arc(w - r, r, r, _rad(-90), 0)
-        ctx.line_to(w, h-r)
+        ctx.line_to(w, h - r)
 
         if r != 0:
             ctx.arc(w - r, h - r, r, _rad(0), _rad(90))

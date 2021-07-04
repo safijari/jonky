@@ -12,6 +12,7 @@ from jonky.drawable import (
     Polygon,
     Color,
     Rectangle,
+    PangoText
 )
 from jonky.widgets import DigitalClock, TimeDial, DayCal
 from PIL import Image as PImage
@@ -70,6 +71,7 @@ class Test(Jonky):
                 Rectangle(
                     300, 100, 10, 5, color="white", fill_color=Color.named("blue", 0.5)
                 ).set_pose(100, 100),
+                PangoText("mononoki", 15, "heyhey").set_pose(200, 200)
             ]
         )
 

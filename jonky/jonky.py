@@ -5,9 +5,6 @@ from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
 
-Gdk.EventExpose()
-
-
 class Jonky(object):
     """Base class for handling the window and other things
 
