@@ -9,6 +9,7 @@ from jonky.drawable import (
     Rectangle,
     Packing,
     Image,
+    PangoText
 )
 from jonky.widget_helpers import datetime_to_string, draw_ring, ampm
 import maya
@@ -50,9 +51,9 @@ def ht_font(x):
     return float(1 - fn_font(x))
 
 
-class DigitalClock(Text):
+class DigitalClock(PangoText):
     def __init__(
-        self, timezone, font, font_size, show_seconds=False, suffix="", *args, **kwargs
+            self, timezone, font, font_size, width=1000, show_seconds=False, suffix="", *args, **kwargs
     ):
         self.timezone = timezone
         self.suffix = suffix
@@ -75,8 +76,7 @@ class TimeDial(Group):
         self.radius = radius
 
     def draw(self, ctx, do_xform=True):
-        super(TimeDial, self).draw(ctx, do_xform)
-        return Rect(0, 0, 1000, 1000)
+        return super(TimeDial, self).draw(ctx, do_xform)
 
 
 def make_scaler(max_val, intify=False):
@@ -99,7 +99,7 @@ class ConcirCal(Group):
             )
         self.nodes.append(
             Polygon(
-                [(0, 0), (-(radius + width * (1 + len(offsets))), 0)],
+                [(0, 0), (-(radius + 100 + width * (1 + len(offsets))), 0)],
                 stroke_width=5,
                 color=Color.named("white", 0.5),
             )
@@ -120,9 +120,9 @@ class LineWithText(Group):
         super(LineWithText, self).__init__(*args, **kwargs)
         self.width = width
         self.stroke_width = stroke_width
-        self.text = Text(
-            font, font_size, text, on_bottom=True, color=self.color
-        ).set_pose(x=self.stroke_width * 2, y=-self.stroke_width * 3)
+        self.text = PangoText(
+            font, font_size, text, color=self.color
+        ).set_pose(x=self.stroke_width * 2, y=-self.stroke_width * 3 - font_size)
         self.line = Polygon(
             [(0, 0), (width, 0)], stroke_width=stroke_width, color=self.color
         )
@@ -148,7 +148,7 @@ class RectangleWithText(Group):
                 width, height, corner_radius, stroke_width=stroke_width, *args, **kwargs
             )
         ]
-        self.text = Text(font, font_size, text, color=self.color).set_pose(
+        self.text = PangoText(font, font_size, text, width=width, color=self.color).set_pose(
             corner_radius + stroke_width, corner_radius + stroke_width
         )
         self.nodes.append(self.text)
@@ -274,9 +274,9 @@ class DayCal(Group):
                 RectangleWithText(
                     self.width - self.stroke_width * 4,
                     end_loc - start_loc,
-                    5,
+                    15,
                     self.font,
-                    min((end_loc - start_loc) * 0.25, self.height * 0.025),
+                    min((end_loc - start_loc) * 0.15, self.height * 0.015),
                     et[-1],
                     stroke_width=self.stroke_width,
                     color="E8E9A1",
@@ -285,7 +285,7 @@ class DayCal(Group):
             )
 
         self.nodes = self.side_lines + final_lines + rects
-        super(DayCal, self).draw(ctx)
+        return super(DayCal, self).draw(ctx)
 
 
 tsize = 20
@@ -325,7 +325,7 @@ class OrgHabits(Group):
         self.filename = filename
         self.packing = Packing.VERTICAL
         self.font = font
-        self.pack_padding = 3
+        self.pack_padding = 15
         self.i = 0
 
     def draw(self, ctx):
@@ -351,6 +351,6 @@ class OrgHabits(Group):
                         le_im = exclaim
                         ims.append(le_im())
                     other_group.append(Group(ims))
-            self.nodes.append(Text(self.font, 20, child.heading, color=self.color))
+            self.nodes.append(PangoText(self.font, 18, child.heading, color=self.color))
             self.nodes.append(Group(other_group, packing=Packing.HORIZONTAL).set_scale(0.25))
         return super(OrgHabits, self).draw(ctx)

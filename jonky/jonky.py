@@ -88,13 +88,24 @@ class JonkyImage:
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
         cr.scale(self.scale, self.scale)
+        rects = []
         for item in self.items:
             if item.pose_transformer:
                 item.pose_transformer(
                     item._pose_correction, self.curr_time - self.start_time
                 )
-            item.draw(cr)
+            r = item.draw(cr)
+            # debug rectangle drawing
+            # cr.save()
+            # item.pre_draw(cr)
+            # cr.set_source_rgb(1, 0, 1)
+            # cr.set_line_width(1)
+            # cr.rectangle(r.x, r.y, r.w, r.h)
+            # cr.stroke()
+            # item.post_draw(cr)
+            # cr.restore()
         cr.restore()
+
         return self
 
     def save(self, path):

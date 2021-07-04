@@ -99,6 +99,21 @@ class Rect:
     def x2(self):
         return self.x + self.w
 
+    @classmethod
+    def from_extents(cls, extents):
+        x1, y1, x2, y2 = extents
+        return cls(x1, y1, x2 - x1, y2 - y1)
+
+    def __add__(self, other):
+        x = min(self.x, other.x)
+        y = min(self.y, other.y)
+        w = max(self.x + self.w, other.x + other.w) - x
+        h = max(self.y + self.h, other.y + other.h) - y
+        return Rect(x, y, w, h)
+
+    def scale(self, scale):
+        return Rect(self.x * scale, self.y * scale, self.w * scale, self.h * scale)
+
 
 @dataclass
 class Point2:
@@ -205,34 +220,38 @@ class Group(Drawable):
     def draw(self, ctx, do_xform=True):
         # print(f"drawing {type(self)}")
         self.pre_draw(ctx, do_xform)
-        rect = Rect(0, 0, 0, 0)
-        x2 = 0
-        y2 = 0
+        rect = None
+        xshift = 0
+        yshift = 0
         for i, node in enumerate(self.nodes):
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
-                    node.set_pose(0, rect.h + i * self.pack_padding)
+                    node.set_pose(0, yshift)
                 if self.packing == Packing.HORIZONTAL:
-                    node.set_pose(rect.w + i * self.pack_padding, 0)
+                    node.set_pose(xshift, 0)
             _rect = node.draw(ctx)
-            if _rect is None:
-                _rect = Rect(0, 0, 1, 1)
+            if self.packing == Packing.NONE:
+                _rect.x += node.pose.x
+                _rect.y += node.pose.y
+            # Debug rectangle drawing
+            # r = _rect
+            # ctx.set_source_rgb(0, 0, 1)
+            # ctx.set_line_width(2)
+            # ctx.rectangle(r.x, r.y, r.w, r.h)
+            # ctx.stroke()
+            if rect is None:
+                rect = _rect
+            else:
+                _rect.x += xshift
+                _rect.y += yshift
+                rect = rect + _rect
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
-                    rect.h += _rect.h + self.pack_padding
-                    rect.w = max(rect.w, _rect.w)
+                    yshift += _rect.h + self.pack_padding
                 if self.packing == Packing.HORIZONTAL:
-                    rect.w += _rect.w + self.pack_padding
-                    rect.h = max(rect.h, _rect.h)
-            else:
-                x2 = max(x2, _rect.x2)
-                y2 = max(y2, _rect.y2)
-                rect.w = x2 - rect.x
-                rect.h = y2 - rect.y
+                    xshift += _rect.w + self.pack_padding
         self.post_draw(ctx)
-        rect.w *= self.scale
-        rect.h *= self.scale
-        return rect
+        return rect.scale(self.scale)
 
 
 class BakedGroup(Group):
@@ -285,6 +304,7 @@ class Text(Drawable):
         x, y = self.pose.x, self.pose.y
         w = 0
         h = 0
+        rect = None
         for line in self.text.split("\n"):
             ctx.select_font_face(self.font)
             ctx.set_font_size(self.font_size)
@@ -297,11 +317,15 @@ class Text(Drawable):
                 ctx.translate(-x, -y)
 
             ctx.show_text(line)
+            if rect is None:
+                rect = Rect(-x, -y, width, height)
+            else:
+                rect += Rect(-x, -y - yshift, width, height)
             ctx.stroke()
             yshift += self.font_size
             self.post_draw(ctx)
         h = yshift
-        return Rect(x, y, w, h)
+        return rect
 
 
 class PangoText(Drawable):
@@ -321,7 +345,7 @@ class PangoText(Drawable):
         self.pre_draw(ctx)
 
         layout = pangocairo.create_layout(ctx)
-        layout.set_width(pango.units_from_double(10000))
+        layout.set_width(pango.units_from_double(self.width))
         layout.set_alignment(pango.Alignment.LEFT)
         layout.set_font_description(
             pango.FontDescription(f"{self.font} {self.font_size}")
@@ -387,7 +411,8 @@ class Image(Drawable):
         ctx.paint()
 
         self.post_draw(ctx)
-        return Rect(0, 0, self.src.get_width(), self.src.get_height())
+        out_rect = Rect(0, 0, self.src.get_width(), self.src.get_height())
+        return out_rect.scale(self.scale)
 
 
 class Shape(Drawable):
@@ -417,6 +442,7 @@ class Arc(Shape):
             self.start_angle * math.pi / 180,
             self.end_angle * math.pi / 180,
         )
+        r = Rect.from_extents(ctx.stroke_extents())
         if self.fill_color:
             ctx.set_source_rgba(*(self.fill_color.tup))
             ctx.fill_preserve()
@@ -425,12 +451,12 @@ class Arc(Shape):
         else:
             ctx.stroke()
         self.post_draw(ctx)
-        return Rect(0, 0, 1, 1)
+        return r
 
 
 class Circle(Arc):
     def __init__(self, radius, *args, **kwargs):
-        super(Circle, self).__init__(radius, 0, math.pi * 2, *args, **kwargs)
+        super(Circle, self).__init__(radius, 0, 360, *args, **kwargs)
 
 
 class Polygon(Shape):
@@ -445,6 +471,7 @@ class Polygon(Shape):
         for pt in self.point_list[1:]:
             ctx.line_to(*(pt.tup))
 
+        rect = Rect.from_extents(ctx.stroke_extents())
         if self.fill_color:
             ctx.set_source_rgba(*(self.fill_color.tup))
             ctx.fill_preserve()
@@ -453,7 +480,7 @@ class Polygon(Shape):
         else:
             ctx.stroke()
         self.post_draw(ctx)
-        return Rect(0, 0, 1, 1)
+        return rect
 
 
 class Rectangle(Shape):
@@ -486,6 +513,7 @@ class Rectangle(Shape):
         if r != 0:
             ctx.arc(r, r, r, _rad(180), _rad(270))
 
+        rect = Rect.from_extents(ctx.stroke_extents())
         if self.fill_color:
             ctx.set_source_rgba(*(self.fill_color.tup))
             ctx.fill_preserve()
@@ -494,3 +522,5 @@ class Rectangle(Shape):
         else:
             ctx.stroke()
         self.post_draw(ctx)
+
+        return rect.scale(self.scale)
