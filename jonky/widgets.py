@@ -105,11 +105,13 @@ class ConcirCal(Group):
             self.nodes.append(
                 TimeDial(radius + width * 1.5, width).set_pose(yaw=-ofs * 15)
             )
+        s = 2
         self.nodes.append(
             Polygon(
-                [(0, 0), (-(radius + width * (1 + len(offsets))), 0)],
-                stroke_width=5,
-                color=Color.named("white", 0.5),
+                [(0, 0), (-(radius - width/2), s), (-(radius - width/2), -s)],
+                stroke_width=1,
+                color=Color.named("white", 0.3),
+                fill_color=Color.named("white", 0.3),
             )
         )
         self.timezone = timezone
