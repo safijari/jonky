@@ -107,7 +107,7 @@ class ConcirCal(Group):
             )
         self.nodes.append(
             Polygon(
-                [(0, 0), (-(radius + 100 + width * (1 + len(offsets))), 0)],
+                [(0, 0), (-(radius + width * (1 + len(offsets))), 0)],
                 stroke_width=5,
                 color=Color.named("white", 0.5),
             )
