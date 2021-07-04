@@ -160,6 +160,7 @@ class DayCal(Group):
         height,
         width,
         stroke_width,
+        font,
         nodes=None,
         time_function=None,
         *args,
@@ -169,12 +170,13 @@ class DayCal(Group):
         self.height = height
         self.width = width
         _s = make_scaler(self.height)
+        self.font = font
         self._s = _s
         self.side_lines = [Rectangle(width, height, 20, stroke_width, color=self.color, fill_color=Color.named("black", 0.65))]
         self.stroke_width = stroke_width
         self.lines = [
             LineWithText(
-                "mononoki",
+                self.font,
                 self.height * 0.02,
                 str(i),
                 self.width,
@@ -273,7 +275,7 @@ class DayCal(Group):
                     self.width - self.stroke_width * 4,
                     end_loc - start_loc,
                     5,
-                    "mononoki",
+                    self.font,
                     min((end_loc - start_loc) * 0.25, self.height * 0.025),
                     et[-1],
                     stroke_width=self.stroke_width,
@@ -318,10 +320,11 @@ def exclaim():
 
 
 class OrgHabits(Group):
-    def __init__(self, filename, *args, **kwargs):
+    def __init__(self, filename, font, *args, **kwargs):
         super(OrgHabits, self).__init__(*args, **kwargs)
         self.filename = filename
         self.packing = Packing.VERTICAL
+        self.font = font
         self.pack_padding = 3
         self.i = 0
 
@@ -348,6 +351,6 @@ class OrgHabits(Group):
                         le_im = exclaim
                         ims.append(le_im())
                     other_group.append(Group(ims))
-            self.nodes.append(Text("mononoki", 20, child.heading, color=self.color))
+            self.nodes.append(Text(self.font, 20, child.heading, color=self.color))
             self.nodes.append(Group(other_group, packing=Packing.HORIZONTAL).set_scale(0.25))
         return super(OrgHabits, self).draw(ctx)
