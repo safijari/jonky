@@ -16,5 +16,6 @@ setup(
         "libjari",
         "bash",
         "orgparse",
+        "psutil"
     ],
 )

@@ -10,6 +10,7 @@ from jonky.drawable import (
     Packing,
     Image,
     PangoText,
+    Circle,
 )
 from jonky.widget_helpers import datetime_to_string, draw_ring, ampm
 import maya
@@ -100,18 +101,22 @@ def make_scaler(max_val, intify=False):
 class ConcirCal(Group):
     def __init__(self, radius, width, timezone, offsets, *args, **kwargs):
         super(ConcirCal, self).__init__(*args, **kwargs)
+        bg_col = Color.named("black", 0.4)
+        self.nodes.append(
+            Circle(radius + width * 2.0, color=bg_col, fill_color=bg_col)
+        )
         self.nodes.append(TimeDial(radius, width))
         for ofs in offsets:
             self.nodes.append(
                 TimeDial(radius + width * 1.5, width).set_pose(yaw=-ofs * 15)
             )
-        s = 2
+        s = 3
         self.nodes.append(
             Polygon(
-                [(0, 0), (-(radius - width/2), s), (-(radius - width/2), -s)],
+                [(0, 0), (-(radius - width / 2), s), (-(radius - width / 2), -s)],
                 stroke_width=1,
-                color=Color.named("white", 0.3),
-                fill_color=Color.named("white", 0.3),
+                color=Color.named("white", 0.6),
+                fill_color=Color.named("white", 0.6),
             )
         )
         self.timezone = timezone
@@ -158,9 +163,10 @@ class RectangleWithText(Group):
                 width, height, corner_radius, stroke_width=stroke_width, *args, **kwargs
             )
         ]
+        r = min(corner_radius, width/2, height/2)
         self.text = PangoText(
             font, font_size, text, width=width, color=self.color
-        ).set_pose(corner_radius + stroke_width, corner_radius + stroke_width)
+        ).set_pose(r + stroke_width, r + stroke_width - font_size)
         self.nodes.append(self.text)
 
 
@@ -227,7 +233,7 @@ class DayCal(Group):
                 (
                     maya.parse(r[0] + " " + r[1], timezone="Europe/Berlin").epoch,
                     maya.parse(r[2] + " " + r[3], timezone="Europe/Berlin").epoch,
-                    r[-1],
+                    r[-1].replace("&", "&amp;"),
                 )
             )
 
@@ -237,6 +243,7 @@ class DayCal(Group):
                     event_times[-1][0] + 3600,
                     event_times[-1][-1],
                 )
+            print(event_times[-1][-1])
         self.events = event_times
 
     def draw(self, ctx):
@@ -288,8 +295,8 @@ class DayCal(Group):
         for et in self.events:
             if not (zero_time < et[0] < end_time or zero_time < et[1] < end_time):
                 continue
-            start_loc = (et[0] - zero_time + 30*60) / th
-            end_loc = (et[1] - zero_time + 30*60) / th
+            start_loc = (et[0] - zero_time + 30 * 60) / th
+            end_loc = (et[1] - zero_time + 30 * 60) / th
 
             font_size = _s(start_loc) * 0.01
             if start_loc < 0.2 or start_loc > 0.8:
@@ -302,7 +309,7 @@ class DayCal(Group):
                     end_loc - start_loc,
                     15,
                     self.font,
-                    min((end_loc - start_loc) * 0.15, self.height * 0.015),
+                    min((end_loc - start_loc) * 0.45, self.height * 0.015),
                     et[-1],
                     stroke_width=self.stroke_width,
                     color="E8E9A1",
@@ -341,19 +348,25 @@ def exclaim():
 
 
 class OrgHabits(Group):
-    def __init__(self, filename, font, *args, **kwargs):
+    def __init__(self, filename, font, size=20, width=350, *args, **kwargs):
         super(OrgHabits, self).__init__(*args, **kwargs)
         self.filename = filename
         self.packing = Packing.VERTICAL
         self.font = font
-        self.pack_padding = 15
+        self.size = size
+        self.width = width
+        self.pack_padding = size / 4
         self.i = 0
 
     def draw(self, ctx):
         self.i += 1
         self.nodes = []
         hb = orgload(self.filename)
+        seen = {}
         for child in hb.children:
+            if child.heading in seen:
+                continue
+            seen[child.heading] = True
             today = _ds(datetime.today())
             dones = [((_ds(d.start) - today).days) for d in child.repeated_tasks]
             alls = list(range(-5, 6, 1))
@@ -372,8 +385,64 @@ class OrgHabits(Group):
                         le_im = exclaim
                         ims.append(le_im())
                     other_group.append(Group(ims))
-            self.nodes.append(PangoText(self.font, 18, child.heading, color=self.color))
+            self.nodes.append(PangoText(self.font, self.size, child.heading, width=self.width, color=self.color))
             self.nodes.append(
-                Group(other_group, packing=Packing.HORIZONTAL).set_scale(0.25)
+                Group(other_group, packing=Packing.HORIZONTAL).set_scale(self.size/100)
             )
         return super(OrgHabits, self).draw(ctx)
+
+
+class Dial(Group):
+    def __init__(self, radius, stroke_width, val=0, name = "", *args, **kwargs):
+        super(Dial, self).__init__(*args, **kwargs)
+        self.radius = radius
+        self.nodes.append(
+            Arc(radius, 90, 360, stroke_width=stroke_width, *args, **kwargs)
+        )
+        self.nodes.append(
+            Arc(
+                radius * 0.5, 90, 360, stroke_width=stroke_width * 3, *args, **kwargs
+            ).set_alpha(0.2)
+        )
+        for angle in range(90, 361, 10):
+            self.nodes.append(
+                Polygon(
+                    [(radius * 0.85, 0), (radius + stroke_width / 2, 0)],
+                    stroke_width=stroke_width / 3,
+                    *args,
+                    **kwargs,
+                ).set_pose(yaw=angle)
+            )
+
+        self.nodes.append(
+            Group(
+                [
+                    Polygon(
+                        [
+                            (radius * 0.8, 0),
+                            (-radius * 0.25, radius * 0.05),
+                            (-radius * 0.25, -radius * 0.05),
+                            (radius * 0.8, 0),
+                        ],
+                        color="#a80300",
+                        fill_color="#a80300",
+                    ),
+                    Circle(
+                        radius * 0.05,
+                        color="#a80300",
+                        stroke_width=stroke_width * 0.4,
+                        fill_color="black",
+                    ),
+                ]
+            )
+        )
+        self.nodes.append(
+            PangoText("", radius*0.3, "", color="white").set_pose(radius*0.1, radius*0.2)
+        )
+        self.val = val
+        self.name = name
+
+    def draw(self, ctx):
+        self.nodes[-2].set_pose(yaw=90 + self.val * (360 - 90))
+        self.nodes[-1].text = f"{int(self.val*100)}%\n{self.name}"
+        return super(Dial, self).draw(ctx)

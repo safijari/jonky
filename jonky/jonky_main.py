@@ -4,7 +4,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
-from jonky.drawable import Color
+# from jonky.jonky.drawable import Color
+
 
 class Jonky(object):
     """Base class for handling the window and other things
@@ -72,19 +73,24 @@ class Jonky(object):
 
 
 class JonkyImage:
-    def __init__(self, width, height, nodes, background_color="black", scale=1):
+    def __init__(self, width, height, nodes, background_color=None, scale=1):
         self.start_time = time.time()
-        self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, width*scale, height*scale)
+        self.buffer = cairo.ImageSurface(
+            cairo.FORMAT_ARGB32, int(width * scale), int(height * scale)
+        )
         self.cairo_context = cairo.Context(self.buffer)
         self.curr_time = time.time()
         self.scale = scale
-        self.background_color = Color.new(background_color)
+        self.background_color = background_color
         self.items = nodes
 
     def draw(self):
         cr: cairo.Context = self.cairo_context
         cr.save()
-        cr.set_source_rgba(*(self.background_color.tup))
+        if self.background_color:
+            cr.set_source_rgba(*(self.background_color.tup))
+        else:
+            cr.set_source_rgba(0, 0, 0, 1)
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
         cr.scale(self.scale, self.scale)
@@ -111,3 +117,41 @@ class JonkyImage:
     def save(self, path):
         self.buffer.write_to_png(path)
         return self
+
+
+class MyWindow(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title="Hello World")
+        self.set_keep_above(False)
+        self.set_keep_below(True)
+        self.set_type_hint(Gdk.WindowTypeHint.DESKTOP)
+        self.set_decorated(False)
+        self.set_accept_focus(False)
+        self.stick()
+        self.connect("destroy", Gtk.main_quit)
+        darea = Gtk.DrawingArea()
+        darea.connect("draw", self.draw)
+        self.add(darea)
+        self.i = 0
+        # self.button = Gtk.Button(label="Click Here")
+        # self.button.connect("clicked", self.on_button_clicked)
+        # self.add(self.button)
+
+    def draw(self, event, cr):
+
+        import math
+        cr.set_line_width(9)
+        cr.set_source_rgb(0.7, 0.2, 0.0)
+                
+        win = self.get_window()
+        w = win.get_width()
+        h = win.get_height()
+
+        cr.translate(w/2, h/2)
+        cr.arc(0, 0, 50, 0, 2*math.pi)
+        cr.stroke_preserve()
+        
+        cr.set_source_rgb(0.3, 0.4, 0.6)
+        cr.fill()
+        print("Hello World", self.i)
+        self.i += 1

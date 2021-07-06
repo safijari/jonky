@@ -72,3 +72,5 @@
 ** Installation
    - Install pycairo (https://pycairo.readthedocs.io/en/latest/getting_started.html)
    - More things?
+** Similar projects
+   https://github.com/P403n1x87/blighty#usage

@@ -189,6 +189,10 @@ class Drawable:
         self.pose_transformer = transformer
         return self
 
+    def set_alpha(self, alpha):
+        self.color.a = alpha
+        return self
+
     def pre_draw(self, ctx, do_xform=True):
         ctx.save()
         ctx.set_source_rgba(*(self.color.tup))
@@ -493,6 +497,7 @@ class Rectangle(Shape):
     def draw(self, ctx: cairo.Context):
         self.pre_draw(ctx)
         w, h, r = self.width, self.height, self.corner_radius
+        r = min(r, w / 2, h / 2)
         ctx.set_line_width(self.stroke_width)
         ctx.move_to(r, 0)
         ctx.line_to(w - r, 0)
