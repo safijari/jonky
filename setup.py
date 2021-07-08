@@ -16,6 +16,7 @@ setup(
         "libjari",
         "bash",
         "orgparse",
-        "psutil"
+        "psutil",
+        "numpy"
     ],
 )
