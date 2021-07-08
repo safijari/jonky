@@ -14,6 +14,7 @@ from jonky.helpers import from_pil, _rad
 from PIL import Image as PImage
 import PIL
 from enum import Enum
+import numpy as np
 
 
 def _ccf(color):
@@ -337,12 +338,15 @@ class PangoText(Drawable):
 
     """
 
-    def __init__(self, font, font_size, text, width=None, *args, **kwargs):
+    def __init__(
+        self, font, font_size, text, alignment="left", width=None, *args, **kwargs
+    ):
         super(PangoText, self).__init__(*args, **kwargs)
         self.font = font
         self.font_size = font_size
         self.text = text
         self.width = width if width else 10000
+        self.alignment = alignment
 
     def draw(self, ctx):
         super(PangoText, self).draw(ctx)
@@ -350,7 +354,10 @@ class PangoText(Drawable):
 
         layout = pangocairo.create_layout(ctx)
         layout.set_width(pango.units_from_double(self.width))
-        layout.set_alignment(pango.Alignment.LEFT)
+        alignment = (
+            pango.Alignment.LEFT if self.alignment == "left" else pango.Alignment.RIGHT
+        )
+        layout.set_alignment(alignment)
         layout.set_font_description(
             pango.FontDescription(f"{self.font} {self.font_size}")
         )
