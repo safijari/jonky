@@ -4,8 +4,15 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
-
-# from jonky.jonky.drawable import Color
+from tkinter import Tk, Label
+from PIL import Image as PImage
+from PIL import ImageTk as PImageTk
+from cairo import ImageSurface, Context, FORMAT_ARGB32
+import numpy as np
+import cairo
+from random import random
+import psutil
+from jonky.drawable import Color
 
 
 class Jonky(object):
@@ -121,6 +128,47 @@ class JonkyImage:
 
     def to_numpy(self):
         import numpy as np
+
         buf = self.buffer.get_data()
-        array = np.ndarray(shape=(self.height, self.width, 4), dtype=np.uint8, buffer=buf)
+        array = np.ndarray(
+            shape=(self.height, self.width, 4), dtype=np.uint8, buffer=buf
+        )
         return array
+
+
+class JonkyTk(Tk):
+    def __init__(
+        self, w, h, items, update_period=1, is_background=False, *args, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.label = None
+        self.items = items
+        self.is_background = is_background
+        self.overrideredirect(is_background)
+        self.lower()
+        self.geometry("{}x{}".format(w, h))
+        self.update_period = update_period
+        self.update_thing()
+        self.mainloop()
+
+    def update_thing(self):
+        if not self.is_background:
+            w = self.winfo_width()
+            h = self.winfo_height()
+        else:
+            w = self.winfo_screenwidth()
+            h = self.winfo_screenheight()
+            self.geometry("{}x{}".format(w, h))
+        self.ji = JonkyImage(w, h, self.items, background_color=Color.named("black"))
+        self.ji.draw()
+        self.arr = self.ji.to_numpy()
+        self._image_ref = PImageTk.PhotoImage(
+            PImage.fromarray(self.arr[:, :, :3][:, :, ::-1], "RGB")
+        )
+        if not self.label:
+            self.label = Label(self, image=self._image_ref)
+            self.label.pack(expand=True, fill="both")
+        else:
+            self.label.configure(image=self._image_ref)
+            self.label.image = self._image_ref
+        self.after(self.update_period * 1000, self.update_thing)
