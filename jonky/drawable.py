@@ -364,42 +364,19 @@ class PangoText(Drawable):
         return Rect(r.x, r.y, r.width, r.height)
 
 
-class Glyph(Drawable):
-    """Documentation for Text
-
-    """
-
-    def __init__(self, font, font_size, glyph_id, on_bottom=False, *args, **kwargs):
-        super(Glyph, self).__init__(*args, **kwargs)
-        self.font = font
-        self.font_size = font_size
-        self.glyph_id = glyph_id
-        self.on_bottom = on_bottom
-
-    def draw(self, ctx: cairo.Context):
-        self.pre_draw(ctx)
-        ctx.select_font_face(
-            self.font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
-        )
-        ctx.set_font_size(self.font_size)
-
-        ctx.show_glyphs([cairo.Glyph(self.glyph_id, 0, 0)])
-        ctx.stroke()
-        self.post_draw(ctx)
-
-        return Rect(0, 0, 1, 1)
-
-
 class Image(Drawable):
-    def __init__(self, src, *args, **kwargs):
+    def __init__(self, src, opacity=1.0, *args, **kwargs):
         super(Image, self).__init__(*args, **kwargs)
         self.src = None
+        if isinstance(src, np.ndarray):
+            self.src = from_pil(PImage.fromarray(src, "RGB"), alpha=opacity)
+            return
         if isinstance(src, str):
-            self.src = from_pil(PImage.open(src))
+            self.src = from_pil(PImage.open(src), alpha=opacity)
 
         # apparently there's no good way to figure out if an image is a PIL image ...
         if self.src is None:
-            self.src = from_pil(src)
+            self.src = from_pil(src, alpha=opacity)
 
     def draw(self, ctx: cairo.Context):
         super(Image, self).draw(ctx)
