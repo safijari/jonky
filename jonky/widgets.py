@@ -102,9 +102,7 @@ class ConcirCal(Group):
     def __init__(self, radius, width, timezone, offsets, *args, **kwargs):
         super(ConcirCal, self).__init__(*args, **kwargs)
         bg_col = Color.named("black", 0.4)
-        self.nodes.append(
-            Circle(radius + width * 2.0, color=bg_col, fill_color=bg_col)
-        )
+        self.nodes.append(Circle(radius + width * 2.0, color=bg_col, fill_color=bg_col))
         self.nodes.append(TimeDial(radius, width))
         for ofs in offsets:
             self.nodes.append(
@@ -135,9 +133,9 @@ class LineWithText(Group):
         super(LineWithText, self).__init__(*args, **kwargs)
         self.width = width
         self.stroke_width = stroke_width
-        self.text = PangoText(font, font_size, text, color=self.color).set_pose(
-            x=self.stroke_width * 2, y=-self.stroke_width * 3 - font_size
-        )
+        self.text = PangoText(
+            font, font_size, text, color=self.color, width=self.width, alignment="right"
+        ).set_pose(x=-self.stroke_width * 4)
         self.line = Polygon(
             [(0, 0), (width, 0)], stroke_width=stroke_width, color=self.color
         )
@@ -163,10 +161,10 @@ class RectangleWithText(Group):
                 width, height, corner_radius, stroke_width=stroke_width, *args, **kwargs
             )
         ]
-        r = min(corner_radius, width/2, height/2)
+        r = min(corner_radius, width / 2, height / 2)
         self.text = PangoText(
             font, font_size, text, width=width, color=self.color
-        ).set_pose(r + stroke_width, r + stroke_width - font_size)
+        ).set_pose(r + stroke_width, font_size)
         self.nodes.append(self.text)
 
 
@@ -192,7 +190,7 @@ class DayCal(Group):
             Rectangle(
                 width,
                 height,
-                20,
+                10,
                 stroke_width,
                 color=self.color,
                 fill_color=Color.named("black", 0.65),
@@ -243,7 +241,6 @@ class DayCal(Group):
                     event_times[-1][0] + 3600,
                     event_times[-1][-1],
                 )
-            print(event_times[-1][-1])
         self.events = event_times
 
     def draw(self, ctx):
@@ -283,9 +280,10 @@ class DayCal(Group):
         l = self.lines[i]
         l.text.color = Color.named("red")
         l.line.color = Color.named("red")
+        l.line.stroke_width = 2
         l.set_pose(y=_s(ht_xform(0.5)))
         l.text.font_size = _s(ht_font(0.5)) * 0.01
-        l.text.text = "now"
+        l.text.text = ""
         final_lines.append(l)
         rects = []
 
@@ -307,7 +305,7 @@ class DayCal(Group):
                 RectangleWithText(
                     self.width - self.stroke_width * 4,
                     end_loc - start_loc,
-                    15,
+                    5,
                     self.font,
                     min((end_loc - start_loc) * 0.45, self.height * 0.015),
                     et[-1],
@@ -385,15 +383,25 @@ class OrgHabits(Group):
                         le_im = exclaim
                         ims.append(le_im())
                     other_group.append(Group(ims))
-            self.nodes.append(PangoText(self.font, self.size, child.heading, width=self.width, color=self.color))
             self.nodes.append(
-                Group(other_group, packing=Packing.HORIZONTAL).set_scale(self.size/100)
+                PangoText(
+                    self.font,
+                    self.size,
+                    child.heading,
+                    width=self.width,
+                    color=self.color,
+                )
+            )
+            self.nodes.append(
+                Group(other_group, packing=Packing.HORIZONTAL).set_scale(
+                    self.size / 100
+                )
             )
         return super(OrgHabits, self).draw(ctx)
 
 
 class Dial(Group):
-    def __init__(self, radius, stroke_width, val=0, name = "", *args, **kwargs):
+    def __init__(self, radius, stroke_width, val=0, name="", *args, **kwargs):
         super(Dial, self).__init__(*args, **kwargs)
         self.radius = radius
         self.nodes.append(
@@ -437,7 +445,9 @@ class Dial(Group):
             )
         )
         self.nodes.append(
-            PangoText("", radius*0.3, "", color="white").set_pose(radius*0.1, radius*0.2)
+            PangoText("", radius * 0.3, "", color="white").set_pose(
+                radius * 0.1, radius * 0.2
+            )
         )
         self.val = val
         self.name = name
