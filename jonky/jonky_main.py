@@ -118,6 +118,12 @@ class JonkyImage:
         self.buffer.write_to_png(path)
         return self
 
+    def to_numpy(self):
+        import numpy as np
+        buf = self.buffer.get_data()
+        array = np.ndarray(shape=(self.height, self.width, 4), dtype=np.uint8, buffer=buf)
+        return array
+
 
 class MyWindow(Gtk.Window):
     def __init__(self):
