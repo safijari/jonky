@@ -15,12 +15,27 @@ from PIL import Image as PImage
 import PIL
 from enum import Enum
 import numpy as np
+from threading import Thread
+import time
 
 
 def _ccf(color):
     if color is None:
         return color
     return convert_color_float(color)
+
+
+def updater_wrapper(fn, self, attr_name, period):
+    start_time = time.time()
+    while True:
+        curr_time = time.time()
+        if curr_time - start_time >= period:
+            out = fn(self)
+            if attr_name:
+                self.__setattr__(attr_name, out)
+            start_time = curr_time
+        else:
+            time.sleep(period / 10)
 
 
 class Pose:
@@ -162,6 +177,7 @@ class Drawable:
         self._pose_correction = Pose()
         self.pose_transformer = None
         self.scale = scale
+        self.thread = None
 
     @property
     def pose(self):
@@ -184,6 +200,12 @@ class Drawable:
 
     def set_scale(self, scale):
         self.scale = scale
+        return self
+
+    def set_updater(self, fn, attr_name, period):
+        self.thread = Thread(target=updater_wrapper, args=(fn, self, attr_name, period))
+        self.thread.daemon = True
+        self.thread.start()
         return self
 
     def set_pose_transformer(self, transformer):

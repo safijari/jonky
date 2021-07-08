@@ -13,12 +13,14 @@ from jonky.drawable import (
     Polygon,
     Color,
     Rectangle,
-    PangoText
+    PangoText,
 )
-from jonky.widgets import DigitalClock, TimeDial, DayCal
+from jonky.widgets import DigitalClock, TimeDial, DayCal, Dial
 from PIL import Image as PImage
 from PIL import ImageFilter
 from libjari.jpath import JPath
+import random
+import psutil
 
 import math
 
@@ -36,18 +38,13 @@ if __name__ == "__main__":
             )
         ),
         Text(
-            "Sans Serif",
-            20,
-            "Theree once was a\nship that took to see",
-            color="black",
+            "Sans Serif", 20, "Theree once was a\nship that took to see", color="black",
         )
         .set_pose(250, 350)
         .set_pose_transformer(transform_pose),
         Group(
             [
-                DigitalClock(
-                    "US/Pacific", "Sans Serif", 30, "Office", color="white"
-                ),
+                DigitalClock("US/Pacific", "Sans Serif", 30, "Office", color="white"),
                 DigitalClock("Europe/Berlin", "Sans Serif", 30, "Local"),
             ],
             Packing.VERTICAL,
@@ -69,6 +66,9 @@ if __name__ == "__main__":
         Rectangle(
             300, 100, 10, 5, color="white", fill_color=Color.named("blue", 0.5)
         ).set_pose(100, 100),
-        PangoText("Sans Serif", 15, "heyhey").set_pose(200, 200)
+        PangoText("Sans Serif", 15, "heyhey").set_pose(200, 200),
+        Dial(200, 10, 0.5)
+        .set_pose(200, 200)
+        .set_updater(lambda self: psutil.cpu_percent() / 100, "val", 0.1),
     ]
-    JonkyTk(500, 500, items, is_background=True)
+    JonkyTk(500, 500, items, update_period=0.1, is_background=True)

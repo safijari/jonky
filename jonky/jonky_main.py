@@ -171,4 +171,4 @@ class JonkyTk(Tk):
         else:
             self.label.configure(image=self._image_ref)
             self.label.image = self._image_ref
-        self.after(self.update_period * 1000, self.update_thing)
+        self.after(int(self.update_period * 1000), self.update_thing)
