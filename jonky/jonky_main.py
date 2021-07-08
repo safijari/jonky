@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
+
 # from jonky.jonky.drawable import Color
 
 
@@ -123,41 +124,3 @@ class JonkyImage:
         buf = self.buffer.get_data()
         array = np.ndarray(shape=(self.height, self.width, 4), dtype=np.uint8, buffer=buf)
         return array
-
-
-class MyWindow(Gtk.Window):
-    def __init__(self):
-        Gtk.Window.__init__(self, title="Hello World")
-        self.set_keep_above(False)
-        self.set_keep_below(True)
-        self.set_type_hint(Gdk.WindowTypeHint.DESKTOP)
-        self.set_decorated(False)
-        self.set_accept_focus(False)
-        self.stick()
-        self.connect("destroy", Gtk.main_quit)
-        darea = Gtk.DrawingArea()
-        darea.connect("draw", self.draw)
-        self.add(darea)
-        self.i = 0
-        # self.button = Gtk.Button(label="Click Here")
-        # self.button.connect("clicked", self.on_button_clicked)
-        # self.add(self.button)
-
-    def draw(self, event, cr):
-
-        import math
-        cr.set_line_width(9)
-        cr.set_source_rgb(0.7, 0.2, 0.0)
-                
-        win = self.get_window()
-        w = win.get_width()
-        h = win.get_height()
-
-        cr.translate(w/2, h/2)
-        cr.arc(0, 0, 50, 0, 2*math.pi)
-        cr.stroke_preserve()
-        
-        cr.set_source_rgb(0.3, 0.4, 0.6)
-        cr.fill()
-        print("Hello World", self.i)
-        self.i += 1
