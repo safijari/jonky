@@ -75,9 +75,9 @@ class Jonky(object):
 class JonkyImage:
     def __init__(self, width, height, nodes, background_color=None, scale=1):
         self.start_time = time.time()
-        self.buffer = cairo.ImageSurface(
-            cairo.FORMAT_ARGB32, int(width * scale), int(height * scale)
-        )
+        self.width = int(width * scale)
+        self.height = int(height * scale)
+        self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
         self.cairo_context = cairo.Context(self.buffer)
         self.curr_time = time.time()
         self.scale = scale
