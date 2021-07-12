@@ -415,7 +415,7 @@ class Image(Drawable):
         # ctx.translate(-self.src.get_width() / 2, -self.src.get_height() / 2)
 
         ctx.rectangle(0, 0, self.src.get_width(), self.src.get_height())
-        ctx.set_operator(cairo.OPERATOR_ATOP)
+        ctx.set_operator(cairo.OPERATOR_OVER)
         ctx.set_source_surface(self.src)
         ctx.clip()
         ctx.paint()
@@ -535,3 +535,34 @@ class Rectangle(Shape):
         self.post_draw(ctx)
 
         return rect.scale(self.scale)
+
+
+class Spiral(Polygon):
+    def __init__(
+            self, start_angle, end_angle, start_radius, end_radius, ccw=False, *args, **kwargs
+    ):
+        super().__init__([], *args, **kwargs)
+        self.start_angle = start_angle
+        self.end_angle = end_angle
+        self.start_radius = start_radius
+        self.end_radius = end_radius
+        self.ccw = ccw
+        self.compute_points()
+
+    def compute_points(self):
+        pts = []
+        curr_r = self.start_radius
+        exp = (self.end_radius - self.start_radius) / (
+            self.end_angle - self.start_angle
+        )
+        step = -1 if self.ccw else 1
+        for angle in range(self.start_angle, self.end_angle):
+            pts.append(
+                Point2(
+                    curr_r * math.cos(step*angle * math.pi / 180),
+                    curr_r * math.sin(step*angle * math.pi / 180),
+                )
+            )
+            curr_r += exp
+
+        self.point_list = pts
