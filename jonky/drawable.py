@@ -376,9 +376,11 @@ class PangoText(Drawable):
 
         layout = pangocairo.create_layout(ctx)
         layout.set_width(pango.units_from_double(self.width))
-        alignment = (
-            pango.Alignment.LEFT if self.alignment == "left" else pango.Alignment.RIGHT
-        )
+        alignment = pango.Alignment.LEFT
+        if self.alignment == "right":
+            alignment = pango.Alignment.RIGHT
+        if self.alignment == "center":
+            alignment = pango.Alignment.CENTER
         layout.set_alignment(alignment)
         layout.set_font_description(
             pango.FontDescription(f"{self.font} {self.font_size}")
@@ -398,7 +400,12 @@ class Image(Drawable):
         super(Image, self).__init__(*args, **kwargs)
         self.src = None
         if isinstance(src, np.ndarray):
-            self.src = from_pil(PImage.fromarray(src, "RGB"), alpha=opacity)
+            if len(src.shape) == 3:
+                self.src = from_pil(PImage.fromarray(src, "RGB"), alpha=opacity)
+            elif len(src.shape) == 4:
+                self.src = from_pil(PImage.fromarray(src, "RGBA"), alpha=opacity)
+            else:
+                raise Exception("uhhhh")
             return
         if isinstance(src, str):
             self.src = from_pil(PImage.open(src), alpha=opacity)
