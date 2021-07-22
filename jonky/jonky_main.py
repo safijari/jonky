@@ -170,6 +170,7 @@ class JonkyPS:
             r = item.draw(cr)
         cr.restore()
         cr.show_page()
+        self.buffer.finish()
 
         return self
 
