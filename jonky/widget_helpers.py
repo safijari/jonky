@@ -6,8 +6,10 @@ def datetime_to_string(dt, show_seconds=True):
     h = dt.hour
     if h == 0:
         h = 12
-    if h > 12:
+    elif h > 12:
         h = h % 12
+        am = "pm"
+    elif h == 12:
         am = "pm"
     oot = f"{str(h).zfill(2)}:{str(dt.minute).zfill(2)}"
     if show_seconds:

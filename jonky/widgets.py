@@ -104,9 +104,9 @@ class ConcirCal(Group):
         bg_col = Color.named("black", 0.4)
         self.nodes.append(Circle(radius + width * 2.0, color=bg_col, fill_color=bg_col))
         self.nodes.append(TimeDial(radius, width))
-        for ofs in offsets:
+        for i, ofs in enumerate(offsets):
             self.nodes.append(
-                TimeDial(radius + width * 1.5, width).set_pose(yaw=-ofs * 15)
+                TimeDial(radius + (i+1)*width * 1.5, width).set_pose(yaw=-ofs * 15)
             )
         s = 3
         self.nodes.append(
@@ -307,7 +307,7 @@ class DayCal(Group):
                     end_loc - start_loc,
                     5,
                     self.font,
-                    min((end_loc - start_loc) * 0.45, self.height * 0.015),
+                    min((end_loc - start_loc) * 0.25, self.height * 0.008),
                     et[-1],
                     stroke_width=self.stroke_width,
                     color="E8E9A1",

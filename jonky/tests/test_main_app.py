@@ -14,6 +14,7 @@ from jonky.drawable import (
     Color,
     Rectangle,
     PangoText,
+    Spiral
 )
 from jonky.widgets import DigitalClock, TimeDial, DayCal, Dial
 from PIL import Image as PImage
@@ -51,15 +52,15 @@ if __name__ == "__main__":
             10,
         ).set_pose(400, 100, 45),
         Group(
-            [DigitalClock("US/Eastern", "Sans Serif", 30, "Dallan")]
+            [DigitalClock("US/Eastern", "Sans Serif", 30, "Dallan", show_seconds=True)]
             + [
                 Image(path.str)
                 for path in JPath.from_home("Pictures").glob_list("tag*png")
             ],
             Packing.VERTICAL,
         ).set_pose(0, 500),
-        TimeDial(150, 20).set_pose(500, 500),
-        TimeDial(180, 20).set_pose(500, 500, 90),
+        # TimeDial(150, 20).set_pose(500, 500),
+        # TimeDial(180, 20).set_pose(500, 500, 90),
         # DayCal(900, 300, 1, color=Color.named("white", 1.0)).set_pose(
         #     1500, 100
         # ),
@@ -69,6 +70,7 @@ if __name__ == "__main__":
         PangoText("Sans Serif", 15, "heyhey").set_pose(200, 200),
         Dial(200, 10, 0.5)
         .set_pose(200, 200)
-        .set_updater(lambda self: psutil.cpu_percent() / 100, "val", 0.1),
+        .set_updater(lambda self: psutil.cpu_percent() / 100, "val", 0.5),
+        Spiral(0, 360*10, 50, 50 + 13 * 10, ccw=True, color="white", stroke_width=10).set_pose(500, 500)
     ]
-    JonkyTk(500, 500, items, update_period=0.1, is_background=True)
+    JonkyTk(500, 500, items, update_period=0.01, is_background=True)
