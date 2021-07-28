@@ -177,10 +177,13 @@ class DayCal(Group):
         font,
         nodes=None,
         time_function=None,
+        timezone="",
         *args,
         **kwargs,
     ):
         super(DayCal, self).__init__([], *args, **kwargs)
+        assert timezone != "", "Must set timezone"
+        self.tz = timezone
         self.height = height
         self.width = width
         _s = make_scaler(self.height)
@@ -229,8 +232,8 @@ class DayCal(Group):
         for r in res:
             event_times.append(
                 (
-                    maya.parse(r[0] + " " + r[1], timezone="Europe/Berlin").epoch,
-                    maya.parse(r[2] + " " + r[3], timezone="Europe/Berlin").epoch,
+                    maya.parse(r[0] + " " + r[1], timezone=self.tz).epoch,
+                    maya.parse(r[2] + " " + r[3], timezone=self.tz).epoch,
                     r[-1].replace("&", "&amp;"),
                 )
             )
