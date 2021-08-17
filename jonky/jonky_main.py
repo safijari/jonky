@@ -81,7 +81,9 @@ class Jonky(object):
 
 
 class JonkyImage:
-    def __init__(self, width, height, nodes=[], background_color=None, scale=1):
+    def __init__(self, width, height, nodes=None, background_color=None, scale=1):
+        if nodes is None:
+            nodes = []
         self.start_time = time.time()
         self.width = int(width * scale)
         self.height = int(height * scale)
