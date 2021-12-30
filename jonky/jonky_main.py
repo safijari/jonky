@@ -15,6 +15,12 @@ import psutil
 from jonky.drawable import Color, Group
 
 
+def switch_channel_order(inarr):
+    channels = [inarr[:, :, i] for i in range(inarr.shape[-1])]
+    channels = [channels[2 - i] for i in range(inarr.shape[-1])]
+    return np.stack(channels, -1)
+
+
 class Jonky(object):
     """Base class for handling the window and other things
 
@@ -128,18 +134,25 @@ class JonkyImage:
         self.buffer.write_to_png(path)
         return self
 
-    def to_numpy(self):
+    def to_numpy(self, rgb=True):
         import numpy as np
 
         buf = self.buffer.get_data()
         array = np.ndarray(
             shape=(self.height, self.width, 4), dtype=np.uint8, buffer=buf
         )
+        if rgb:
+            array = switch_channel_order(array)
         return array
+
+    def to_opencv(self):
+        return to_numpy(rgb=False)
 
 
 class JonkyPS:
-    def __init__(self, width, height, filename, nodes=[], background_color=None, scale=1):
+    def __init__(
+        self, width, height, filename, nodes=[], background_color=None, scale=1
+    ):
         self.start_time = time.time()
         self.width = int(width * scale)
         self.height = int(height * scale)
@@ -176,6 +189,7 @@ class JonkyPS:
 
         return self
 
+
 class JonkyTk(Tk):
     def __init__(
         self, w, h, items, update_period=1, is_background=False, *args, **kwargs
@@ -193,8 +207,8 @@ class JonkyTk(Tk):
         self.update_period = update_period
         self.bind("<Button-4>", self.scroll)
         self.bind("<Button-5>", self.scroll)
-        self.bind('<Button1-Motion>', self.move)
-        self.bind('<ButtonRelease-1>', self.release)
+        self.bind("<Button1-Motion>", self.move)
+        self.bind("<ButtonRelease-1>", self.release)
         self.zoom_level = 1.0
         self.update()
         self.mainloop()
@@ -230,7 +244,9 @@ class JonkyTk(Tk):
             w = self.winfo_screenwidth()
             h = self.winfo_screenheight()
             self.geometry("{}x{}".format(w, h))
-        main_group = Group(self.items).set_pose(self.xpos, self.ypos).set_scale(self.zoom_level)
+        main_group = (
+            Group(self.items).set_pose(self.xpos, self.ypos).set_scale(self.zoom_level)
+        )
         self.ji = JonkyImage(w, h, [main_group], background_color=Color.named("black"))
         self.ji.draw()
         arr = self.ji.to_numpy()
