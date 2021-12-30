@@ -1,3 +1,11 @@
+import os
+
+DEBUG = False
+if os.environ.get("JONKY_DEBUG", None):
+    DEBUG = True
+
+
+
 import gi
 
 gi.require_version("Pango", "1.0")
@@ -17,7 +25,6 @@ from enum import Enum
 import numpy as np
 from threading import Thread
 import time
-
 
 def _ccf(color):
     if color is None:
@@ -178,6 +185,7 @@ class Drawable:
         self.pose_transformer = None
         self.scale = scale
         self.thread = None
+        self.packing_corrections = Point2(0, 0)
 
     @property
     def pose(self):
@@ -253,25 +261,29 @@ class Group(Drawable):
         for i, node in enumerate(self.nodes):
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
-                    node.set_pose(0, yshift)
+                    node.set_pose(node.packing_corrections.x, yshift + node.packing_corrections.y)
                 if self.packing == Packing.HORIZONTAL:
-                    node.set_pose(xshift, 0)
+                    node.set_pose(xshift + node.packing_corrections.x, node.packing_corrections.y)
             _rect = node.draw(ctx)
             if self.packing == Packing.NONE:
                 _rect.x += node.pose.x
                 _rect.y += node.pose.y
-            # Debug rectangle drawing
-            # r = _rect
-            # ctx.set_source_rgb(0, 0, 1)
-            # ctx.set_line_width(2)
-            # ctx.rectangle(r.x, r.y, r.w, r.h)
-            # ctx.stroke()
+
             if rect is None:
                 rect = _rect
             else:
-                _rect.x += xshift
-                _rect.y += yshift
+                _rect.x += xshift + node.packing_corrections.x
+                _rect.y += yshift + node.packing_corrections.y
                 rect = rect + _rect
+
+            # Debug rectangle drawing
+            if DEBUG:
+                r = _rect
+                ctx.set_source_rgb(0, 0, 1)
+                ctx.set_line_width(2)
+                ctx.rectangle(r.x, r.y, r.w, r.h)
+                ctx.stroke()
+
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
                     yshift += _rect.h + self.pack_padding
@@ -445,9 +457,19 @@ class Shape(Drawable):
 class Arc(Shape):
     def __init__(self, radius, start_angle, end_angle, *args, **kwargs):
         super(Arc, self).__init__(*args, **kwargs)
-        self.radius = radius
         self.start_angle = start_angle
         self.end_angle = end_angle
+        self.radius = radius
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
+    def radius(self, val):
+        self._radius = val
+        self.packing_corrections.x = val
+        self.packing_corrections.y = val
 
     def draw(self, ctx: cairo.Context):
         self.pre_draw(ctx)
@@ -460,6 +482,9 @@ class Arc(Shape):
             self.end_angle * math.pi / 180,
         )
         r = Rect.from_extents(ctx.stroke_extents())
+        # if not self.center_based:
+        #     r.x += self.radius
+        #     r.y += self.radius
         if self.fill_color:
             ctx.set_source_rgba(*(self.fill_color.tup))
             ctx.fill_preserve()
@@ -467,6 +492,7 @@ class Arc(Shape):
             ctx.stroke()
         else:
             ctx.stroke()
+
         self.post_draw(ctx)
         return r
 
@@ -546,7 +572,14 @@ class Rectangle(Shape):
 
 class Spiral(Polygon):
     def __init__(
-            self, start_angle, end_angle, start_radius, end_radius, ccw=False, *args, **kwargs
+        self,
+        start_angle,
+        end_angle,
+        start_radius,
+        end_radius,
+        ccw=False,
+        *args,
+        **kwargs,
     ):
         super().__init__([], *args, **kwargs)
         self.start_angle = start_angle
@@ -566,8 +599,8 @@ class Spiral(Polygon):
         for angle in range(self.start_angle, self.end_angle):
             pts.append(
                 Point2(
-                    curr_r * math.cos(step*angle * math.pi / 180),
-                    curr_r * math.sin(step*angle * math.pi / 180),
+                    curr_r * math.cos(step * angle * math.pi / 180),
+                    curr_r * math.sin(step * angle * math.pi / 180),
                 )
             )
             curr_r += exp

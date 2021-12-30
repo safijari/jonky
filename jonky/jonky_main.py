@@ -12,7 +12,7 @@ import numpy as np
 import cairo
 from random import random
 import psutil
-from jonky.drawable import Color, Group
+from jonky.drawable import Color, Group, DEBUG
 
 
 def switch_channel_order(inarr):
@@ -117,15 +117,18 @@ class JonkyImage:
                     item._pose_correction, self.curr_time - self.start_time
                 )
             r = item.draw(cr)
-            # debug rectangle drawing
-            # cr.save()
-            # item.pre_draw(cr)
-            # cr.set_source_rgb(1, 0, 1)
-            # cr.set_line_width(1)
-            # cr.rectangle(r.x, r.y, r.w, r.h)
-            # cr.stroke()
-            # item.post_draw(cr)
-            # cr.restore()
+
+            # Debug rectangle drawing
+            if DEBUG:
+                cr.save()
+                item.pre_draw(cr)
+                cr.set_source_rgb(1, 0, 1)
+                cr.set_line_width(1)
+                cr.rectangle(r.x, r.y, r.w, r.h)
+                cr.stroke()
+                item.post_draw(cr)
+                cr.restore()
+
         cr.restore()
 
         return self
