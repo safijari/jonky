@@ -146,7 +146,7 @@ class JonkyImage:
         return array
 
     def to_opencv(self):
-        return to_numpy(rgb=False)
+        return self.to_numpy(rgb=False)
 
 
 class JonkyPS:
