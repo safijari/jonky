@@ -221,30 +221,33 @@ class DayCal(Group):
         self.update_events()
 
     def update_events(self):
-        cal = str(
-            bash(
-                f"gcalcli --calendar {os.environ['JONKY_EMAIL_ADDRESS']} agenda --details=length --tsv "
-                + maya.when("yesterday").datetime().strftime("%Y-%m-%d")
-            )
-        )
-        res = [line.split("\t") for line in cal.split("\n")]
-        event_times = []
-        for r in res:
-            event_times.append(
-                (
-                    maya.parse(r[0] + " " + r[1], timezone=self.tz).epoch,
-                    maya.parse(r[2] + " " + r[3], timezone=self.tz).epoch,
-                    r[-1].replace("&", "&amp;"),
+        try:
+            cal = str(
+                bash(
+                    f"gcalcli --calendar {os.environ['JONKY_EMAIL_ADDRESS']} agenda --details=length --tsv "
+                    + maya.when("yesterday").datetime().strftime("%Y-%m-%d")
                 )
             )
+            res = [line.split("\t") for line in cal.split("\n")]
+            event_times = []
+            for r in res:
+                event_times.append(
+                    (
+                        maya.parse(r[0] + " " + r[1], timezone=self.tz).epoch,
+                        maya.parse(r[2] + " " + r[3], timezone=self.tz).epoch,
+                        r[-1].replace("&", "&amp;"),
+                    )
+                )
 
-            if (event_times[-1][1] - event_times[-1][0]) == 3600 * 24:
-                event_times[-1] = (
-                    event_times[-1][0],
-                    event_times[-1][0] + 3600,
-                    event_times[-1][-1],
-                )
-        self.events = event_times
+                if (event_times[-1][1] - event_times[-1][0]) == 3600 * 24:
+                    event_times[-1] = (
+                        event_times[-1][0],
+                        event_times[-1][0] + 3600,
+                        event_times[-1][-1],
+                    )
+            self.events = event_times
+        except Exception:
+            self.events = [(maya.parse("10am", timezone=self.tz).epoch, maya.parse("10pm", timezone=self.tz).epoch, "RE AUTHORIZE GCALCLI "*100)]
 
     def draw(self, ctx):
         _s = self._s
