@@ -253,7 +253,7 @@ class DayCal(Group):
         _s = self._s
         final_lines = []
         timestamp = self.time_function()
-        le_time = maya.Datetime.fromtimestamp(timestamp)
+        le_time = maya.MayaDT(timestamp).datetime(to_timezone=self.tz)
         offset = le_time.minute * 60
         hr = le_time.hour
 
