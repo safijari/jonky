@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GObject, Gdk
 import cairo
 import time
+
 # from tkinter import Tk, Label
 from PIL import Image as PImage
 from PIL import ImageTk as PImageTk
@@ -39,7 +40,7 @@ class Jonky(object):
         self.cairo_context_root = self.root.cairo_create()
         self.curr_time = time.time()
         self.target_size = target_size
-        self.items = []
+        self.nodes = []
 
     def run(self):
         self.draw()
@@ -76,7 +77,7 @@ class Jonky(object):
         cr.set_source_rgb(1.0, 1.0, 1.0)
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
-        for item in self.items:
+        for item in self.nodes:
             if item.pose_transformer:
                 item.pose_transformer(
                     item._pose_correction, self.curr_time - self.start_time
@@ -98,7 +99,7 @@ class JonkyImage:
         self.curr_time = time.time()
         self.scale = scale
         self.background_color = background_color
-        self.items = nodes
+        self.nodes = nodes
 
     def draw(self):
         cr: cairo.Context = self.cairo_context
@@ -111,7 +112,7 @@ class JonkyImage:
         cr.paint()
         cr.scale(self.scale, self.scale)
         rects = []
-        for item in self.items:
+        for item in self.nodes:
             if item.pose_transformer:
                 item.pose_transformer(
                     item._pose_correction, self.curr_time - self.start_time
@@ -163,32 +164,34 @@ class JonkyPS:
             self.buffer = cairo.PDFSurface(filename, self.width, self.height)
         elif ".svg" in filename:
             self.buffer = cairo.SVGSurface(filename, self.width, self.height)
-        self.cairo_context = cairo.Context(self.buffer)
         self.curr_time = time.time()
         self.scale = scale
         self.background_color = background_color
-        self.items = nodes
+        self.nodes = nodes
 
-    def draw(self):
+    def draw(self, finish=True):
+        self.cairo_context = cairo.Context(self.buffer)
         cr: cairo.Context = self.cairo_context
         cr.save()
-        if self.background_color:
-            cr.set_source_rgba(*(self.background_color.tup))
-        else:
-            cr.set_source_rgba(0, 0, 0, 1)
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.paint()
+        # if self.background_color:
+        #     cr.set_source_rgba(*(self.background_color.tup))
+        # else:
+        #     cr.set_source_rgba(0, 0, 0, 1)
+        # cr.set_operator(cairo.OPERATOR_SOURCE)
+        # cr.paint()
         cr.scale(self.scale, self.scale)
         rects = []
-        for item in self.items:
+        for item in self.nodes:
             if item.pose_transformer:
                 item.pose_transformer(
                     item._pose_correction, self.curr_time - self.start_time
                 )
             r = item.draw(cr)
         cr.restore()
-        cr.show_page()
-        self.buffer.finish()
+        # cr.show_page()
+        self.buffer.show_page()
+        if finish:
+            self.buffer.finish()
 
         return self
 
@@ -202,7 +205,7 @@ class JonkyPS:
 #         self.drag_end = (0, 0)
 #         self.move_flag = False
 #         self.label = None
-#         self.items = items
+#         self.nodes = items
 #         self.is_background = is_background
 #         self.overrideredirect(is_background)
 #         self.lower()
@@ -248,7 +251,7 @@ class JonkyPS:
 #             h = self.winfo_screenheight()
 #             self.geometry("{}x{}".format(w, h))
 #         main_group = (
-#             Group(self.items).set_pose(self.xpos, self.ypos).set_scale(self.zoom_level)
+#             Group(self.nodes).set_pose(self.xpos, self.ypos).set_scale(self.zoom_level)
 #         )
 #         self.ji = JonkyImage(w, h, [main_group], background_color=Color.named("black"))
 #         self.ji.draw()

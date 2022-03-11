@@ -5,7 +5,6 @@ if os.environ.get("JONKY_DEBUG", None):
     DEBUG = True
 
 
-
 import gi
 
 gi.require_version("Pango", "1.0")
@@ -18,7 +17,6 @@ from libjari.colors import convert_color_float
 import math
 from dataclasses import dataclass
 import cairo
-from jonky.helpers import from_pil, _rad
 from PIL import Image as PImage
 import PIL
 from enum import Enum
@@ -26,10 +24,35 @@ import numpy as np
 from threading import Thread
 import time
 
+import math
+
+import PIL.Image as Image
+
+
+def _rad(deg):
+    return deg * math.pi / 180
+
+
 def _ccf(color):
     if color is None:
         return color
     return convert_color_float(color)
+
+
+def from_pil(im, alpha=1.0, format=cairo.FORMAT_ARGB32):
+    """
+    :param im: Pillow Image
+    :param alpha: 0..1 alpha to add to non-alpha images
+    :param format: Pixel format for output surface
+    """
+    assert format in (cairo.FORMAT_RGB24, cairo.FORMAT_ARGB32), (
+        "Unsupported pixel format: %s" % format
+    )
+    if "A" not in im.getbands():
+        im.putalpha(int(alpha * 256.0))
+    arr = bytearray(im.tobytes("raw", "BGRa"))
+    surface = cairo.ImageSurface.create_for_data(arr, format, im.width, im.height)
+    return surface
 
 
 def updater_wrapper(fn, self, attr_name, period):
@@ -246,6 +269,8 @@ class Group(Drawable):
     def __init__(self, nodes=None, packing=None, pack_padding=0, *args, **kwargs):
         super(Group, self).__init__(*args, **kwargs)
         self.packing = packing
+        if isinstance(self.packing, str):
+            self.packing = Packing(self.packing)
         self.pack_padding = pack_padding
         if packing is None:
             self.packing = Packing.NONE
@@ -261,9 +286,13 @@ class Group(Drawable):
         for i, node in enumerate(self.nodes):
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
-                    node.set_pose(node.packing_corrections.x, yshift + node.packing_corrections.y)
+                    node.set_pose(
+                        node.packing_corrections.x, yshift + node.packing_corrections.y
+                    )
                 if self.packing == Packing.HORIZONTAL:
-                    node.set_pose(xshift + node.packing_corrections.x, node.packing_corrections.y)
+                    node.set_pose(
+                        xshift + node.packing_corrections.x, node.packing_corrections.y
+                    )
             _rect = node.draw(ctx)
             if self.packing == Packing.NONE:
                 _rect.x += node.pose.x
@@ -373,7 +402,14 @@ class PangoText(Drawable):
     """
 
     def __init__(
-        self, font, font_size, text, alignment="left", width=None, *args, **kwargs
+        self,
+        text,
+        font_size=50,
+        font="Arial",
+        alignment="left",
+        width=None,
+        *args,
+        **kwargs,
     ):
         super(PangoText, self).__init__(*args, **kwargs)
         self.font = font
@@ -407,9 +443,9 @@ class PangoText(Drawable):
         return Rect(r.x, r.y, r.width, r.height)
 
 
-class Image(Drawable):
+class JImage(Drawable):
     def __init__(self, src, opacity=1.0, *args, **kwargs):
-        super(Image, self).__init__(*args, **kwargs)
+        super(JImage, self).__init__(*args, **kwargs)
         self.src = None
         if isinstance(src, np.ndarray):
             if len(src.shape) == 3:
@@ -427,7 +463,7 @@ class Image(Drawable):
             self.src = from_pil(src, alpha=opacity)
 
     def draw(self, ctx: cairo.Context):
-        super(Image, self).draw(ctx)
+        super(JImage, self).draw(ctx)
         self.pre_draw(ctx)
         ctx.set_source_rgba(0, 0, 0, 0.0)
 
