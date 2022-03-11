@@ -67,7 +67,7 @@ class DigitalClock(PangoText):
         self.timezone = timezone
         self.suffix = suffix
         self.show_seconds = show_seconds
-        super(DigitalClock, self).__init__(font, font_size, self.text, *args, **kwargs)
+        super(DigitalClock, self).__init__(font=font, font_size=font_size, text=self.text, *args, **kwargs)
 
     @property
     def text(self):
@@ -106,7 +106,7 @@ class ConcirCal(Group):
         self.nodes.append(TimeDial(radius, width))
         for i, ofs in enumerate(offsets):
             self.nodes.append(
-                TimeDial(radius + (i+1)*width * 1.5, width).set_pose(yaw=-ofs * 15)
+                TimeDial(radius + (i + 1) * width * 1.5, width).set_pose(yaw=-ofs * 15)
             )
         s = 3
         self.nodes.append(
@@ -134,7 +134,12 @@ class LineWithText(Group):
         self.width = width
         self.stroke_width = stroke_width
         self.text = PangoText(
-            font, font_size, text, color=self.color, width=self.width, alignment="right"
+            font=font,
+            font_size=font_size,
+            text=text,
+            color=self.color,
+            width=self.width,
+            alignment="right",
         ).set_pose(x=-self.stroke_width * 4)
         self.line = Polygon(
             [(0, 0), (width, 0)], stroke_width=stroke_width, color=self.color
@@ -163,7 +168,7 @@ class RectangleWithText(Group):
         ]
         r = min(corner_radius, width / 2, height / 2)
         self.text = PangoText(
-            font, font_size, text, width=width, color=self.color
+            font=font, font_size=font_size, text=text, width=width, color=self.color
         ).set_pose(r + stroke_width, font_size)
         self.nodes.append(self.text)
 
@@ -247,7 +252,13 @@ class DayCal(Group):
                     )
             self.events = event_times
         except Exception:
-            self.events = [(maya.parse("10am", timezone=self.tz).epoch, maya.parse("10pm", timezone=self.tz).epoch, "RE AUTHORIZE GCALCLI "*100)]
+            self.events = [
+                (
+                    maya.parse("10am", timezone=self.tz).epoch,
+                    maya.parse("10pm", timezone=self.tz).epoch,
+                    "RE AUTHORIZE GCALCLI " * 100,
+                )
+            ]
 
     def draw(self, ctx):
         _s = self._s
@@ -391,9 +402,9 @@ class OrgHabits(Group):
                     other_group.append(Group(ims))
             self.nodes.append(
                 PangoText(
-                    self.font,
-                    self.size,
-                    child.heading,
+                    font=self.font,
+                    font_size=self.size,
+                    text=child.heading,
                     width=self.width,
                     color=self.color,
                 )
@@ -451,7 +462,7 @@ class Dial(Group):
             )
         )
         self.nodes.append(
-            PangoText("", radius * 0.3, "", color="white").set_pose(
+            PangoText(font="", font_size=radius * 0.3, text="", color="white").set_pose(
                 radius * 0.1, radius * 0.2
             )
         )
