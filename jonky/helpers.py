@@ -44,7 +44,7 @@ def jshow(element, ret_only=False):
     ji = JonkyImage(1, 1, [element], background_color=Color.named("white"))
     r = element.draw(ji.cairo_context)
     ji = JonkyImage(
-        int(r.w), int(r.h), [element], background_color=Color.named("white")
+        int(r.x + r.w*(1.2)), int(r.y + r.h*(1.2)), [element.set_pose(r.w*0.1, r.h*0.1)], background_color=Color.named("white")
     )
     ji.draw()
     return ji.to_numpy()

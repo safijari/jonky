@@ -67,7 +67,9 @@ class DigitalClock(PangoText):
         self.timezone = timezone
         self.suffix = suffix
         self.show_seconds = show_seconds
-        super(DigitalClock, self).__init__(font=font, font_size=font_size, text=self.text, *args, **kwargs)
+        super(DigitalClock, self).__init__(
+            font=font, font_size=font_size, text=self.text, *args, **kwargs
+        )
 
     @property
     def text(self):
@@ -240,7 +242,10 @@ class DayCal(Group):
                     (
                         maya.parse(r[0] + " " + r[1], timezone=self.tz).epoch,
                         maya.parse(r[2] + " " + r[3], timezone=self.tz).epoch,
-                        r[-1].replace("&", "&amp;"),
+                        r[4]
+                        .replace("&", "&amp;")
+                        .replace("<", "(")
+                        .replace(">", ")"),
                     )
                 )
 
