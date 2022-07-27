@@ -448,9 +448,11 @@ class JImage(Drawable):
         super(JImage, self).__init__(*args, **kwargs)
         self.src = None
         if isinstance(src, np.ndarray):
-            if len(src.shape) == 3:
+            if len(src.shape) == 1:
+                self.src = from_pil(PImage.fromarray(src, "L"), alpha=opacity)
+            if len(src.shape) == 3 and src.shape[2] == 3:
                 self.src = from_pil(PImage.fromarray(src, "RGB"), alpha=opacity)
-            elif len(src.shape) == 4:
+            elif len(src.shape) == 3 and src.shape[2] == 4:
                 self.src = from_pil(PImage.fromarray(src, "RGBA"), alpha=opacity)
             else:
                 raise Exception("uhhhh")
