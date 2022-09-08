@@ -449,8 +449,10 @@ class JImage(Drawable):
         self.src = None
         if isinstance(src, np.ndarray):
             if len(src.shape) == 2:
-                self.src = from_pil(PImage.fromarray(src, "L"), alpha=opacity)
-            if len(src.shape) == 3 and src.shape[2] == 3:
+                _im = PImage.fromarray(src, "L")
+                _im = _im.convert(mode="RGB")
+                self.src = from_pil(_im, alpha=opacity)
+            elif len(src.shape) == 3 and src.shape[2] == 3:
                 self.src = from_pil(PImage.fromarray(src, "RGB"), alpha=opacity)
             elif len(src.shape) == 3 and src.shape[2] == 4:
                 self.src = from_pil(PImage.fromarray(src, "RGBA"), alpha=opacity)
