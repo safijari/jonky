@@ -231,7 +231,7 @@ class DayCal(Group):
         try:
             cal = str(
                 bash(
-                    f"gcalcli --calendar {os.environ['JONKY_EMAIL_ADDRESS']} agenda --details=length --tsv "
+                    f"gcalcli --calendar \"{os.environ['JONKY_EMAIL_ADDRESS']}\" agenda --details=length --tsv "
                     + maya.when("yesterday").datetime().strftime("%Y-%m-%d")
                 )
             )
