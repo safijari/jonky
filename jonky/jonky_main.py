@@ -153,7 +153,7 @@ class JonkyImage:
 
 class JonkyPS:
     def __init__(
-        self, width, height, filename, nodes=[], background_color=None, scale=1
+        self, width, height, filename, nodes=None, background_color=None, scale=1
     ):
         self.start_time = time.time()
         self.width = int(width * scale)
@@ -165,7 +165,7 @@ class JonkyPS:
         self.curr_time = time.time()
         self.scale = scale
         self.background_color = background_color
-        self.nodes = nodes
+        self.nodes = nodes or []
 
     def draw(self, finish=True):
         self.cairo_context = cairo.Context(self.buffer)

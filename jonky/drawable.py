@@ -408,6 +408,7 @@ class PangoText(Drawable):
         font="Arial",
         alignment="left",
         width=None,
+        line_spacing=1,
         *args,
         **kwargs,
     ):
@@ -417,6 +418,7 @@ class PangoText(Drawable):
         self.text = text
         self.width = width if width else 10000
         self.alignment = alignment
+        self.line_spacing = line_spacing
 
     def draw(self, ctx):
         super(PangoText, self).draw(ctx)
@@ -424,6 +426,7 @@ class PangoText(Drawable):
 
         layout = pangocairo.create_layout(ctx)
         layout.set_width(pango.units_from_double(self.width))
+        layout.set_line_spacing(self.line_spacing + 1)
         alignment = pango.Alignment.LEFT
         if self.alignment == "right":
             alignment = pango.Alignment.RIGHT
