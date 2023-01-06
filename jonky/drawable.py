@@ -426,7 +426,7 @@ class PangoText(Drawable):
 
         layout = pangocairo.create_layout(ctx)
         layout.set_width(pango.units_from_double(self.width))
-        layout.set_line_spacing(self.line_spacing + 1)
+        layout.set_line_spacing(self.line_spacing)
         alignment = pango.Alignment.LEFT
         if self.alignment == "right":
             alignment = pango.Alignment.RIGHT

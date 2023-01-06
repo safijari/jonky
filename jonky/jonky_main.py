@@ -171,12 +171,12 @@ class JonkyPS:
         self.cairo_context = cairo.Context(self.buffer)
         cr: cairo.Context = self.cairo_context
         cr.save()
-        # if self.background_color:
-        #     cr.set_source_rgba(*(self.background_color.tup))
-        # else:
-        #     cr.set_source_rgba(0, 0, 0, 1)
-        # cr.set_operator(cairo.OPERATOR_SOURCE)
-        # cr.paint()
+        if self.background_color:
+            cr.set_source_rgba(*(self.background_color.tup))
+        else:
+            cr.set_source_rgba(0, 0, 0, 1)
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.paint()
         cr.scale(self.scale, self.scale)
         rects = []
         for item in self.nodes:
@@ -186,8 +186,8 @@ class JonkyPS:
                 )
             r = item.draw(cr)
         cr.restore()
-        # cr.show_page()
         self.buffer.show_page()
+        self.nodes = []
         if finish:
             self.buffer.finish()
 
