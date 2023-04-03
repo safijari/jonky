@@ -17,6 +17,6 @@ setup(
         "bash",
         "orgparse",
         "psutil",
-        "numpy"
+        "numpy",
     ],
 )

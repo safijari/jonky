@@ -2,20 +2,6 @@ from .drawable import Group, Packing, Color
 from .jonky_main import JonkyImage
 
 
-class DPIConverter:
-    def __init__(self, dpi=300):
-        self.dpi = dpi
-
-    def __call__(self, inval, inval2=None, intify=False):
-        cvt = int if intify else lambda x: x
-        if inval2 is not None:
-            return [cvt(inval * self.dpi), cvt(inval2 * self.dpi)]
-        # inval is either one value or a list/tuple of inches
-        if isinstance(inval, (list, tuple)):
-            return [cvt(iv * self.dpi) for iv in inval]
-        return cvt(inval * self.dpi)
-
-
 def make_jonky_grids(items_in, columns, rows, vertical_spacing=0, horizontal_spacing=0):
     items = [i for i in items_in]
     out = []

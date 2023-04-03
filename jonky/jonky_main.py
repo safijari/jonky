@@ -20,10 +20,22 @@ def switch_channel_order(inarr):
     return np.stack(channels, -1)
 
 
-class Jonky(object):
-    """Base class for handling the window and other things
+class DPIConverter:
+    def __init__(self, dpi=300):
+        self.dpi = dpi
 
-    """
+    def __call__(self, inval, inval2=None, intify=False):
+        cvt = int if intify else lambda x: x
+        if inval2 is not None:
+            return [cvt(inval * self.dpi), cvt(inval2 * self.dpi)]
+        # inval is either one value or a list/tuple of inches
+        if isinstance(inval, (list, tuple)):
+            return [cvt(iv * self.dpi) for iv in inval]
+        return cvt(inval * self.dpi)
+
+
+class Jonky(object):
+    """Base class for handling the window and other things"""
 
     def __init__(self, period_in_sec=0.5, target_size=None):
         super(Jonky, self).__init__()
@@ -86,7 +98,15 @@ class Jonky(object):
 
 
 class JonkyImage:
-    def __init__(self, width, height, nodes=None, background_color=None, scale=1):
+    def __init__(
+        self,
+        width,
+        height,
+        nodes=None,
+        background_color=None,
+        scale=1,
+        dpi_converter=None,
+    ):
         if nodes is None:
             nodes = []
         self.start_time = time.time()
@@ -98,6 +118,9 @@ class JonkyImage:
         self.scale = scale
         self.background_color = background_color
         self.nodes = nodes
+        if not isinstance(dpi_converter, DPIConverter):
+            dpi_converter = DPIConverter(dpi_converter)
+        self.dpi_converter = dpi_converter
 
     def draw(self):
         cr: cairo.Context = self.cairo_context
@@ -120,7 +143,7 @@ class JonkyImage:
             # Debug rectangle drawing
             if DEBUG:
                 cr.save()
-                item.pre_draw(cr)
+                item.pre_draw(cr, dpi_converter=dpi_converter)
                 cr.set_source_rgb(1, 0, 1)
                 cr.set_line_width(1)
                 cr.rectangle(r.x, r.y, r.w, r.h)
