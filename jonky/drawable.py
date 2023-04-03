@@ -436,7 +436,7 @@ class Group(Drawable):
 
     def draw(self, ctx, do_xform=True, dpi_converter=None):
         # print(f"drawing {type(self)}")
-        self.pre_draw(ctx, do_xform, dpi_converter=dpi_converter)
+        self.pre_draw(ctx, do_xform)
         rect = None
         xshift = 0
         yshift = 0
@@ -473,12 +473,12 @@ class Group(Drawable):
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
                     if dpi_converter:
-                        yshift += dpi_converter.rev(_rect.h) + self.pack_padding
+                        yshift += _rect.h + dpi_converter(self.pack_padding)
                     else:
                         yshift += _rect.h + self.pack_padding
                 if self.packing == Packing.HORIZONTAL:
                     if dpi_converter:
-                        xshift += dpi_converter.rev(_rect.w) + self.pack_padding
+                        xshift += _rect.w + dpi_converter(self.pack_padding)
                     else:
                         xshift += _rect.w + self.pack_padding
         self.post_draw(ctx)
