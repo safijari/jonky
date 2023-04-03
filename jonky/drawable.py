@@ -418,7 +418,7 @@ class Drawable:
     def post_draw(self, ctx):
         ctx.restore()
 
-    def draw(self, ctx):
+    def draw(self, ctx, dpi_converter=None):
         pass
 
 
@@ -434,9 +434,9 @@ class Group(Drawable):
         assert self.packing != Packing.GRID
         self.nodes = nodes if nodes is not None else []
 
-    def draw(self, ctx, do_xform=True):
+    def draw(self, ctx, do_xform=True, dpi_converter=None):
         # print(f"drawing {type(self)}")
-        self.pre_draw(ctx, do_xform)
+        self.pre_draw(ctx, do_xform, dpi_converter=dpi_converter)
         rect = None
         xshift = 0
         yshift = 0
@@ -450,7 +450,7 @@ class Group(Drawable):
                     node.set_pose(
                         xshift + node.packing_corrections.x, node.packing_corrections.y
                     )
-            _rect = node.draw(ctx)
+            _rect = node.draw(ctx, dpi_converter=dpi_converter)
             if self.packing == Packing.NONE:
                 _rect.x += node.pose.x
                 _rect.y += node.pose.y
@@ -472,9 +472,15 @@ class Group(Drawable):
 
             if self.packing != Packing.NONE:
                 if self.packing == Packing.VERTICAL:
-                    yshift += _rect.h + self.pack_padding
+                    if dpi_converter:
+                        yshift += dpi_converter.rev(_rect.h) + self.pack_padding
+                    else:
+                        yshift += _rect.h + self.pack_padding
                 if self.packing == Packing.HORIZONTAL:
-                    xshift += _rect.w + self.pack_padding
+                    if dpi_converter:
+                        xshift += dpi_converter.rev(_rect.w) + self.pack_padding
+                    else:
+                        xshift += _rect.w + self.pack_padding
         self.post_draw(ctx)
         return rect.scale(self.scale)
 
@@ -484,9 +490,9 @@ class BakedGroup(Group):
         super(BakedGroup, self).__init__(*args, **kwargs)
         self.surface = None
 
-    def draw(self, ctx: cairo.Context):
+    def draw(self, ctx: cairo.Context, dpi_converter=None):
         if not self.surface:
-            size = super(BakedGroup, self).draw(ctx, True)
+            size = super(BakedGroup, self).draw(ctx, True, dpi_converter=dpi_converter)
             self.surface = cairo.ImageSurface(
                 cairo.FORMAT_ARGB32, int(size.w) * 2, int(size.h) * 2
             )
@@ -497,10 +503,10 @@ class BakedGroup(Group):
             surface_ctx.set_operator(cairo.OPERATOR_SOURCE)
             surface_ctx.paint()
 
-            super(BakedGroup, self).draw(surface_ctx, False)
+            super(BakedGroup, self).draw(surface_ctx, False, dpi_converter=dpi_converter)
             self.surface.write_to_png("/tmp/test.png")
         else:
-            self.pre_draw(ctx, True)
+            self.pre_draw(ctx, True, dpi_converter=dpi_converter)
             ctx.scale(0.5, 0.5)
             ctx.rectangle(0, 0, self.surface.get_width(), self.surface.get_height())
             ctx.set_source_rgba(0, 0, 0, 0.0)
@@ -521,8 +527,8 @@ class Text(Drawable):
         self.text = text
         self.on_bottom = on_bottom
 
-    def draw(self, ctx):
-        super(Text, self).draw(ctx)
+    def draw(self, ctx, dpi_converter=None):
+        super(Text, self).draw(ctx, dpi_converter=dpi_converter)
         yshift = 0
         x, y = self.pose.x, self.pose.y
         w = 0
@@ -534,7 +540,7 @@ class Text(Drawable):
             (x, y, width, height, dx, dy) = ctx.text_extents(self.text)
             w = max(width, w)
 
-            self.pre_draw(ctx)
+            self.pre_draw(ctx, dpi_converter=dpi_converter)
             ctx.translate(0, yshift)
             if not self.on_bottom:
                 ctx.translate(-x, -y)
@@ -573,22 +579,31 @@ class PangoText(Drawable):
         self.alignment = alignment
         self.line_spacing = line_spacing
 
-    def draw(self, ctx):
-        super(PangoText, self).draw(ctx)
-        self.pre_draw(ctx)
+    def draw(self, ctx, dpi_converter=None):
+        super(PangoText, self).draw(ctx, dpi_converter=dpi_converter)
+        self.pre_draw(ctx, dpi_converter=dpi_converter)
 
         layout = pangocairo.create_layout(ctx)
-        layout.set_width(pango.units_from_double(self.width))
-        layout.set_line_spacing(self.line_spacing)
+        if not dpi_converter:
+            layout.set_width(pango.units_from_double(self.width))
+            layout.set_line_spacing(self.line_spacing)
+            layout.set_font_description(
+                pango.FontDescription(f"{self.font} {self.font_size}")
+            )
+        else:
+            layout.set_width(pango.units_from_double(dpi_converter(self.width)))
+            layout.set_line_spacing(dpi_converter(self.line_spacing))
+            layout.set_font_description(
+                pango.FontDescription(
+                    f"{self.font} {dpi_converter(self.font_size)}"
+                )
+            )
         alignment = pango.Alignment.LEFT
         if self.alignment == "right":
             alignment = pango.Alignment.RIGHT
         if self.alignment == "center":
             alignment = pango.Alignment.CENTER
         layout.set_alignment(alignment)
-        layout.set_font_description(
-            pango.FontDescription(f"{self.font} {self.font_size}")
-        )
         layout.set_markup(self.text)
 
         pangocairo.show_layout(ctx, layout)
@@ -622,9 +637,9 @@ class JImage(Drawable):
         if self.src is None:
             self.src = from_pil(src, alpha=opacity)
 
-    def draw(self, ctx: cairo.Context):
-        super(JImage, self).draw(ctx)
-        self.pre_draw(ctx)
+    def draw(self, ctx: cairo.Context, dpi_converter=None):
+        super(JImage, self).draw(ctx, dpi_converter=dpi_converter)
+        self.pre_draw(ctx, dpi_converter=dpi_converter)
         ctx.set_source_rgba(0, 0, 0, 0.0)
 
         # ctx.translate(-self.src.get_width() / 2, -self.src.get_height() / 2)
@@ -646,7 +661,7 @@ class Shape(Drawable):
         # assert fill_color is None
         self.stroke_width = stroke_width
 
-    def draw(self, ctx: cairo.Context):
+    def draw(self, ctx: cairo.Context, dpi_converter=None):
         pass
 
 
@@ -667,8 +682,8 @@ class Arc(Shape):
         self.packing_corrections.x = val
         self.packing_corrections.y = val
 
-    def draw(self, ctx: cairo.Context):
-        self.pre_draw(ctx)
+    def draw(self, ctx: cairo.Context, dpi_converter=None):
+        self.pre_draw(ctx, dpi_converter=dpi_converter)
         ctx.set_line_width(self.stroke_width)
         ctx.arc(
             0,
@@ -703,8 +718,8 @@ class Polygon(Shape):
         super(Polygon, self).__init__(*args, **kwargs)
         self.point_list = [Point2.new(p) for p in point_list]
 
-    def draw(self, ctx: cairo.Context):
-        self.pre_draw(ctx)
+    def draw(self, ctx: cairo.Context, dpi_converter=None):
+        self.pre_draw(ctx, dpi_converter=dpi_converter)
         ctx.set_line_width(self.stroke_width)
         ctx.move_to(*(self.point_list[0].tup))
         for pt in self.point_list[1:]:
@@ -729,8 +744,8 @@ class Rectangle(Shape):
         self.height = height
         self.corner_radius = corner_radius
 
-    def draw(self, ctx: cairo.Context):
-        self.pre_draw(ctx)
+    def draw(self, ctx: cairo.Context, dpi_converter=None):
+        self.pre_draw(ctx, dpi_converter=dpi_converter)
         w, h, r = self.width, self.height, self.corner_radius
         r = min(r, w / 2, h / 2)
         ctx.set_line_width(self.stroke_width)

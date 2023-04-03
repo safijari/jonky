@@ -86,8 +86,8 @@ class TimeDial(Group):
         super(TimeDial, self).__init__(draw_ring(radius, width), *args, **kwargs)
         self.radius = radius
 
-    def draw(self, ctx, do_xform=True):
-        return super(TimeDial, self).draw(ctx, do_xform)
+    def draw(self, ctx, do_xform=True, dpi_converter=None):
+        return super(TimeDial, self).draw(ctx, do_xform, dpi_converter=dpi_converter)
 
 
 def make_scaler(max_val, intify=False):
@@ -121,12 +121,12 @@ class ConcirCal(Group):
         )
         self.timezone = timezone
 
-    def draw(self, ctx):
+    def draw(self, ctx, dpi_converter=None):
         m = maya.when("now").datetime(to_timezone=self.timezone)
         hour_val = m.hour + m.minute / 60
         angle = 360 / 24 * (hour_val) - 9 * 15
         self.nodes[-1].set_pose(yaw=angle)
-        return super(ConcirCal, self).draw(ctx)
+        return super(ConcirCal, self).draw(ctx, dpi_converter=dpi_converter)
 
 
 class LineWithText(Group):
@@ -265,7 +265,7 @@ class DayCal(Group):
                 )
             ]
 
-    def draw(self, ctx):
+    def draw(self, ctx, dpi_converter=None):
         _s = self._s
         final_lines = []
         timestamp = self.time_function()
@@ -338,7 +338,7 @@ class DayCal(Group):
             )
 
         self.nodes = self.side_lines + final_lines + rects
-        return super(DayCal, self).draw(ctx)
+        return super(DayCal, self).draw(ctx, dpi_converter=dpi_converter)
 
 
 tsize = 20
@@ -378,7 +378,7 @@ class OrgHabits(Group):
         self.pack_padding = size / 4
         self.i = 0
 
-    def draw(self, ctx):
+    def draw(self, ctx, dpi_converter=None):
         self.i += 1
         self.nodes = []
         hb = orgload(self.filename)
@@ -419,7 +419,7 @@ class OrgHabits(Group):
                     self.size / 100
                 )
             )
-        return super(OrgHabits, self).draw(ctx)
+        return super(OrgHabits, self).draw(ctx, dpi_converter=dpi_converter)
 
 
 class Dial(Group):
@@ -474,7 +474,7 @@ class Dial(Group):
         self.val = val
         self.name = name
 
-    def draw(self, ctx):
+    def draw(self, ctx, dpi_converter=None):
         self.nodes[-2].set_pose(yaw=90 + self.val * (360 - 90))
         self.nodes[-1].text = f"{int(self.val*100)}%\n{self.name}"
-        return super(Dial, self).draw(ctx)
+        return super(Dial, self).draw(ctx, dpi_converter=dpi_converter)

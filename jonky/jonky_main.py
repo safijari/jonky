@@ -33,6 +33,9 @@ class DPIConverter:
             return [cvt(iv * self.dpi) for iv in inval]
         return cvt(inval * self.dpi)
 
+    def rev(self, inval):
+        return inval / self.dpi
+
 
 class Jonky(object):
     """Base class for handling the window and other things"""
@@ -110,7 +113,7 @@ class Canvas:
         if nodes is None:
             nodes = []
         self.start_time = time.time()
-        if not isinstance(dpi_converter, DPIConverter):
+        if dpi_converter is not None and not isinstance(dpi_converter, DPIConverter):
             dpi_converter = DPIConverter(dpi_converter)
         if dpi_converter is None:
             self.width = int(width * scale)
@@ -180,19 +183,35 @@ class Canvas:
 
 class CanvasPS:
     def __init__(
-        self, width, height, filename, nodes=None, background_color=None, scale=1
+        self,
+        width,
+        height,
+        filename,
+        nodes=None,
+        background_color="white",
+        scale=1,
+        dpi_converter=None,
     ):
         self.start_time = time.time()
-        self.width = int(width * scale)
-        self.height = int(height * scale)
+
+        if dpi_converter is not None and not isinstance(dpi_converter, DPIConverter):
+            dpi_converter = DPIConverter(dpi_converter)
+
+        if dpi_converter is None:
+            self.width = int(width * scale)
+            self.height = int(height * scale)
+        else:
+            self.width = int(dpi_converter(width) * scale)
+            self.height = int(dpi_converter(height) * scale)
         if ".pdf" in filename:
             self.buffer = cairo.PDFSurface(filename, self.width, self.height)
         elif ".svg" in filename:
             self.buffer = cairo.SVGSurface(filename, self.width, self.height)
         self.curr_time = time.time()
         self.scale = scale
-        self.background_color = background_color
+        self.background_color = Color(background_color)
         self.nodes = nodes or []
+        self.dpi_converter = dpi_converter
 
     def draw(self, finish=True):
         self.cairo_context = cairo.Context(self.buffer)
@@ -211,7 +230,7 @@ class CanvasPS:
                 item.pose_transformer(
                     item._pose_correction, self.curr_time - self.start_time
                 )
-            r = item.draw(cr)
+            r = item.draw(cr, dpi_converter=self.dpi_converter)
         cr.restore()
         self.buffer.show_page()
         self.nodes = []
@@ -219,6 +238,7 @@ class CanvasPS:
             self.buffer.finish()
 
         return self
+
 
 JonkyImage = Canvas
 JonkyPS = CanvasPS
