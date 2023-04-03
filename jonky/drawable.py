@@ -249,6 +249,8 @@ class Pose:
 
 class Color:
     def __init__(self, r=0, g=0, b=0, a=1):
+        if isinstance(r, Color):
+            r, g, b = r.r, r.g, r.b
         if isinstance(r, str):
             r, g, b = _ccf(r)
         self.r = r
@@ -800,3 +802,5 @@ class Spiral(Polygon):
             curr_r += exp
 
         self.point_list = pts
+
+RichText = PangoText

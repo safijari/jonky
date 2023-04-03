@@ -97,29 +97,33 @@ class Jonky(object):
         cr.restore()
 
 
-class JonkyImage:
+class Canvas:
     def __init__(
         self,
         width,
         height,
         nodes=None,
-        background_color=None,
+        background_color="white",
         scale=1,
         dpi_converter=None,
     ):
         if nodes is None:
             nodes = []
         self.start_time = time.time()
-        self.width = int(width * scale)
-        self.height = int(height * scale)
+        if not isinstance(dpi_converter, DPIConverter):
+            dpi_converter = DPIConverter(dpi_converter)
+        if dpi_converter is None:
+            self.width = int(width * scale)
+            self.height = int(height * scale)
+        else:
+            self.width = int(dpi_converter(width) * scale)
+            self.height = int(dpi_converter(height) * scale)
         self.buffer = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
         self.cairo_context = cairo.Context(self.buffer)
         self.curr_time = time.time()
         self.scale = scale
-        self.background_color = background_color
+        self.background_color = Color(background_color)
         self.nodes = nodes
-        if not isinstance(dpi_converter, DPIConverter):
-            dpi_converter = DPIConverter(dpi_converter)
         self.dpi_converter = dpi_converter
 
     def draw(self):
@@ -138,12 +142,12 @@ class JonkyImage:
                 item.pose_transformer(
                     item._pose_correction, self.curr_time - self.start_time
                 )
-            r = item.draw(cr)
+            r = item.draw(cr, dpi_converter=self.dpi_converter)
 
             # Debug rectangle drawing
             if DEBUG:
                 cr.save()
-                item.pre_draw(cr, dpi_converter=dpi_converter)
+                item.pre_draw(cr, dpi_converter=self.dpi_converter)
                 cr.set_source_rgb(1, 0, 1)
                 cr.set_line_width(1)
                 cr.rectangle(r.x, r.y, r.w, r.h)
@@ -174,7 +178,7 @@ class JonkyImage:
         return self.to_numpy(rgb=False)
 
 
-class JonkyPS:
+class CanvasPS:
     def __init__(
         self, width, height, filename, nodes=None, background_color=None, scale=1
     ):
@@ -215,3 +219,6 @@ class JonkyPS:
             self.buffer.finish()
 
         return self
+
+JonkyImage = Canvas
+JonkyPS = CanvasPS
