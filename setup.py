@@ -3,7 +3,7 @@ import os
 
 setup(
     name="jonky",
-    version="0.0.4",
+    version="0.0.5",
     description="jonky, Jari's conky",
     author="Jariullah Safi",
     author_email="safijari@isu.edu",
